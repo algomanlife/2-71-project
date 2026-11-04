@@ -755,6 +755,7 @@ __device__ void _ModSqr(uint64_t *rp,const uint64_t *up) {
   UADD(rp[3],r512[3],0ULL);
 
 #endif
+}
 
 __device__ void fieldInv(const uint64_t in[4], uint64_t out[4]) {
     uint64_t t[5];

@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="300" viewBox="0 0 880 300" role="img" aria-label="2^71 project architecture">
+  <defs>
+    <linearGradient id="abg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0b1017"/>
+      <stop offset="1" stop-color="#0d1420"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#3b7bff"/>
+    </marker>
+  </defs>
+  <rect width="880" height="300" rx="12" fill="url(#abg)"/>
+  <text x="440" y="34" text-anchor="middle" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="18" font-weight="700" fill="#f2f7fb">Execution Architecture</text>
+
+  <!-- Stage boxes -->
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12">
+    <!-- Host runtime -->
+    <rect x="30" y="70" width="150" height="170" rx="10" fill="#101826" stroke="#1d2a3a"/>
+    <text x="105" y="95" text-anchor="middle" fill="#00d4ff" font-weight="700">Host Runtime</text>
+    <g fill="#8fa3b8">
+      <text x="105" y="122" text-anchor="middle">CLI parsing</text>
+      <text x="105" y="142" text-anchor="middle">range / grid</text>
+      <text x="105" y="162" text-anchor="middle">validation</text>
+      <text x="105" y="182" text-anchor="middle">pinned buffers</text>
+      <text x="105" y="202" text-anchor="middle">progress / result</text>
+      <text x="105" y="222" text-anchor="middle">output</text>
+    </g>
+
+    <!-- CUDA execution -->
+    <rect x="220" y="70" width="150" height="170" rx="10" fill="#101826" stroke="#1d2a3a"/>
+    <text x="295" y="95" text-anchor="middle" fill="#3b7bff" font-weight="700">CUDA Execution</text>
+    <g fill="#8fa3b8">
+      <text x="295" y="122" text-anchor="middle">setup kernels</text>
+      <text x="295" y="142" text-anchor="middle">(G-multiples, J)</text>
+      <text x="295" y="162" text-anchor="middle">search kernel</text>
+      <text x="295" y="182" text-anchor="middle">256 thr/block</text>
+      <text x="295" y="202" text-anchor="middle">sliced launches</text>
+      <text x="295" y="222" text-anchor="middle">stream polling</text>
+    </g>
+
+    <!-- EC arithmetic -->
+    <rect x="410" y="70" width="150" height="170" rx="10" fill="#101826" stroke="#1d2a3a"/>
+    <text x="485" y="95" text-anchor="middle" fill="#8a5cf6" font-weight="700">EC Arithmetic</text>
+    <g fill="#8fa3b8">
+      <text x="485" y="122" text-anchor="middle">secp256k1 field</text>
+      <text x="485" y="142" text-anchor="middle">batch inversion</text>
+      <text x="485" y="162" text-anchor="middle">±G point walk</text>
+      <text x="485" y="182" text-anchor="middle">PTX carry chains</text>
+      <text x="485" y="202" text-anchor="middle">constant-mem G</text>
+      <text x="485" y="222" text-anchor="middle">divsteps inverse</text>
+    </g>
+
+    <!-- Hash processing -->
+    <rect x="600" y="70" width="150" height="170" rx="10" fill="#101826" stroke="#1d2a3a"/>
+    <text x="675" y="95" text-anchor="middle" fill="#00d4ff" font-weight="700">Hash Pipeline</text>
+    <g fill="#8fa3b8">
+      <text x="675" y="122" text-anchor="middle">SHA-256 (1 blk)</text>
+      <text x="675" y="142" text-anchor="middle">RIPEMD-160</text>
+      <text x="675" y="162" text-anchor="middle">4-byte prefix</text>
+      <text x="675" y="182" text-anchor="middle">warp vote</text>
+      <text x="675" y="202" text-anchor="middle">full 20-B match</text>
+      <text x="675" y="222" text-anchor="middle">atomic CAS claim</text>
+    </g>
+  </g>
+
+  <!-- arrows -->
+  <g stroke="#3b7bff" stroke-width="2" fill="none">
+    <path d="M185 155 H215" marker-end="url(#arrow)"/>
+    <path d="M375 155 H405" marker-end="url(#arrow)"/>
+    <path d="M565 155 H595" marker-end="url(#arrow)"/>
+  </g>
+  <!-- validation loop -->
+  <path d="M675 245 V268 H105 V248" stroke="#00d4ff" stroke-width="2" fill="none" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+  <text x="390" y="285" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#5b7391">found-flag polling → host validation (private key / public key / hash160 cross-check)</text>
+  <!-- annotation -->
+  <text x="790" y="95" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#5b7391">reference</text>
+  <text x="790" y="112" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#5b7391">cross-check</text>
+  <text x="790" y="129" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#5b7391">(ecdsa)</text>
+</svg>

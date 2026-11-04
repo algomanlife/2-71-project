@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="220" viewBox="0 0 880 220" role="img" aria-label="2^71 project banner">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0a0e14"/>
+      <stop offset="1" stop-color="#0d1520"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#00d4ff"/>
+      <stop offset="0.55" stop-color="#3b7bff"/>
+      <stop offset="1" stop-color="#8a5cf6"/>
+    </linearGradient>
+  </defs>
+  <rect width="880" height="220" rx="12" fill="url(#bg)"/>
+  <!-- subtle grid -->
+  <g stroke="#16202e" stroke-width="1">
+    <path d="M0 55 H880 M0 110 H880 M0 165 H880"/>
+    <path d="M110 0 V220 M220 0 V220 M330 0 V220 M440 0 V220 M550 0 V220 M660 0 V220 M770 0 V220"/>
+  </g>
+  <!-- exponent motif -->
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
+    <text x="64" y="118" font-size="84" font-weight="700" fill="#e8f1f8">2<tspan dy="-40" font-size="46" fill="#00d4ff">71</tspan></text>
+  </g>
+  <rect x="236" y="96" width="560" height="4" rx="2" fill="url(#accent)"/>
+  <text x="236" y="82" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="30" font-weight="700" fill="#f2f7fb">2^71 project</text>
+  <text x="236" y="132" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="15" fill="#8fa3b8">CUDA-Accelerated secp256k1 Research &amp; GPU Performance Engineering</text>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#5b7391">
+    <text x="236" y="168">CUDA 13</text>
+    <circle cx="302" cy="164" r="3" fill="#00d4ff"/>
+    <text x="314" y="168">sm_120</text>
+    <circle cx="374" cy="164" r="3" fill="#3b7bff"/>
+    <text x="386" y="168">Blackwell</text>
+    <circle cx="462" cy="164" r="3" fill="#8a5cf6"/>
+    <text x="474" y="168">secp256k1</text>
+    <circle cx="556" cy="164" r="3" fill="#00d4ff"/>
+    <text x="568" y="168">batch EC</text>
+    <circle cx="640" cy="164" r="3" fill="#3b7bff"/>
+    <text x="652" y="168">hash160</text>
+  </g>
+  <rect x="236" y="180" width="112" height="20" rx="10" fill="none" stroke="#1d2a3a"/>
+  <text x="292" y="194" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#5b7391">research</text>
+  <rect x="358" y="180" width="112" height="20" rx="10" fill="none" stroke="#1d2a3a"/>
+  <text x="414" y="194" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#5b7391">evidence-based</text>
+  <rect x="480" y="180" width="112" height="20" rx="10" fill="none" stroke="#1d2a3a"/>
+  <text x="536" y="194" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#5b7391">correctness-first</text>
+</svg>

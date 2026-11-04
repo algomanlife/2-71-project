@@ -114,6 +114,7 @@ jobs:
         continue-on-error: true
       - name: Run CPU tests (GPU search tests must SKIP, not pass silently)
         run: |
+          set -o pipefail   # `unittest | tee` must propagate test failures
           if [ ! -d tests ]; then
             echo "NOTE: no tests/ on this branch yet (transitional branch)"
             exit 0

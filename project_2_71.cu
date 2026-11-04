@@ -380,8 +380,6 @@ extern std::string formatHex256(const uint64_t limbs[4]);
 extern long double ld_from_u256(const uint64_t v[4]);
 extern bool decode_p2pkh_address(const std::string& addr, uint8_t out20[20]);
 extern std::string formatCompressedPubHex(const uint64_t X[4], const uint64_t Y[4]);
-__global__ void scalarMulKernelBase(const uint64_t* scalars_in, uint64_t* outX, uint64_t* outY, int N);
-
 int main(int argc, char** argv) {
     std::signal(SIGINT, handle_sigint);
 

@@ -1,0 +1,121 @@
+# 2^71 project — CI quality gates
+#
+# IMPORTANT: these jobs run on CPU-only GitHub-hosted runners.
+# A green build here means "compiles and CPU-side tests pass".
+# It is NEVER a substitute for GPU validation (see
+# docs/compatibility/CUDA13_BLACKWELL.md — verification status).
+# GPU benchmarks run only on GPU-equipped runners (none configured yet).
+
+name: ci
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-cuda13:
+    name: Build (CUDA 13, sm_120 + legacy, CPU-only runner)
+    runs-on: ubuntu-latest
+    container:
+      image: nvidia/cuda:13.0.0-devel-ubuntu24.04
+    steps:
+      - name: Install make
+        run: |
+          apt-get update -qq && apt-get install -y -qq make > /dev/null
+      - uses: actions/checkout@v4
+      - name: Build for sm_120 (Blackwell)
+        run: make GPU_ARCH=120 SM_ARCHS="120"
+      - name: Build legacy architectures (sm_75/86/89 + sm_120)
+        run: |
+          make clean
+          make GPU_ARCH=120
+      - name: Register/spill report (audit H2 evidence)
+        run: make ptxas-info
+      - name: Verify executable was produced
+        run: test -x ./project-2-71
+
+  python-tests:
+    name: CPU reference tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install deps
+        run: pip install ecdsa
+      - name: Run CPU tests (GPU tests must SKIP, not pass silently)
+        run: |
+          if [ ! -d tests ]; then
+            echo "NOTE: no tests/ on this branch yet (transitional branch)"
+            exit 0
+          fi
+          python3 -m unittest discover -s tests -v 2>&1 | tee unittest.log
+          if grep -q "test_gpu_validation" unittest.log; then
+            grep "test_gpu_validation" unittest.log | grep -q "skipped" || {
+              echo "ERROR: GPU tests ran or failed on a CPU-only runner"; exit 1; }
+          fi
+
+  python-hygiene:
+    name: Python syntax + harness integrity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile all python sources on this branch
+        run: |
+          shopt -s nullglob
+          sources=(proof.py tests/*.py)
+          if [ ${#sources[@]} -eq 0 ]; then echo "no python sources"; exit 0; fi
+          python3 -m py_compile "${sources[@]}"
+      - name: Bash syntax check
+        run: |
+          if [ -f benchmarks/baseline/run_baseline.sh ]; then
+            bash -n benchmarks/baseline/run_baseline.sh
+          fi
+
+  repo-hygiene:
+    name: Branding and documentation-link hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: No obsolete branding in active code
+        run: |
+          # Old-brand mentions are allowed only in attribution docs
+          # (README provenance lines, ATTRIBUTION.md) — never in code,
+          # build files, scripts, or CI definitions.
+          matches=$(grep -rniE "cyclone|dookoo" --exclude-dir=.github \
+              --include="*.cu" --include="*.cuh" --include="*.h" \
+              --include="*.py" --include="Makefile" \
+              --include="*.yml" --include="*.sh" . || true)
+          if [ -n "$matches" ]; then
+            echo "Obsolete branding found in active files:"
+            echo "$matches"
+            exit 1
+          fi
+      - name: Markdown link targets exist (no broken doc references)
+        run: |
+          broken=0
+          for md in $(find . -name "*.md" -not -path "./.git/*"); do
+            for target in $(grep -oE "\]\(([^)#]+\.md)\)" "$md" | sed 's/^](//; s/)$//' | grep -v "^http" || true); do
+              dir=$(dirname "$md")
+              if [ ! -f "$dir/$target" ]; then
+                echo "BROKEN: $md -> $target"
+                broken=1
+              fi
+            done
+          done
+          [ "$broken" -eq 0 ] || exit 1
+      - name: No fabricated benchmark rows in baseline docs
+        run: |
+          for f in docs/benchmarks/BASELINE_RESULTS.md docs/benchmarks/PERFORMANCE_HISTORY.md; do
+            [ -f "$f" ] || continue
+            if grep -qE "^\| [0-9a-f]{7,} \|" "$f"; then
+              echo "ERROR: $f contains measured-looking rows without hardware-run records"
+              exit 1
+            fi
+          done

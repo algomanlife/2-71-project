@@ -88,9 +88,15 @@ jobs:
         run: make ptxas-info
       - name: Verify executable was produced
         run: test -x ./project-2-71
+      - name: Upload solver binary (for argument-validation tests)
+        uses: actions/upload-artifact@v4
+        with:
+          name: solver-binary
+          path: project-2-71
+          retention-days: 7
 
   python-tests:
-    name: CPU reference tests
+    name: CPU reference tests + argument validation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -99,16 +105,32 @@ jobs:
           python-version: "3.12"
       - name: Install deps
         run: pip install ecdsa
-      - name: Run CPU tests (GPU tests must SKIP, not pass silently)
+      - name: Fetch solver binary (may not exist on transitional branches)
+        id: fetch_bin
+        uses: actions/download-artifact@v4
+        with:
+          name: solver-binary
+        continue-on-error: true
+      - name: Run CPU tests (GPU search tests must SKIP, not pass silently)
         run: |
           if [ ! -d tests ]; then
             echo "NOTE: no tests/ on this branch yet (transitional branch)"
             exit 0
           fi
+          if [ -f project-2-71 ]; then
+            chmod +x project-2-71
+            # argument-validation tests exit before any CUDA call, so the
+            # Linux x86_64 binary runs on this GPU-less runner.
+            export PROJECT_2_71_BIN="$PWD/project-2-71"
+          else
+            echo "NOTE: no solver binary artifact; binary tests will skip"
+          fi
           python3 -m unittest discover -s tests -v 2>&1 | tee unittest.log
-          if grep -q "test_gpu_validation" unittest.log; then
-            grep "test_gpu_validation" unittest.log | grep -q "skipped" || {
-              echo "ERROR: GPU tests ran or failed on a CPU-only runner"; exit 1; }
+          # unittest fails the step on FAIL/ERROR. Additionally, GPU search
+          # tests must report skips here (CPU-only runner):
+          if grep -E "test_readme_vector|test_range_matrix|test_grid_configurations|test_slice_configurations|test_both_parities|test_seeded_random|test_config_invariance|test_same_run_twice|test_no_match|test_found_exit" unittest.log \
+             | grep -v "skipped" | grep -q .; then
+            echo "ERROR: GPU search tests executed on a CPU-only runner"; exit 1
           fi
 
   python-hygiene:

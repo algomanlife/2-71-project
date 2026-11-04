@@ -71,19 +71,32 @@ __global__ void kernel_point_add_and_check_oneinv(
     const int half = B >> 1;
 
     const uint64_t gid = (uint64_t)blockIdx.x * blockDim.x + threadIdx.x;
-    if (gid >= threadsTotal) return;
-
     const unsigned lane      = (unsigned)(threadIdx.x & (WARP_SIZE - 1));
-    const unsigned full_mask = 0xFFFFFFFFu;
+    // Small ranges launch a partially-filled final block. The ballot below
+    // is executed by every lane of the warp BEFORE any early return, so it
+    // yields the exact set of active lanes (a contiguous prefix 0..k-1,
+    // since gid ordering is linear). All subsequent warp-collective calls
+    // (shfl/any/syncwarp/flush) use this mask and remain well-defined.
+    const bool in_range = (gid < threadsTotal);
+    const unsigned full_mask = __ballot_sync(0xFFFFFFFFu, in_range);
+    if (!in_range) return;
+
     if (warp_found_ready(d_found_flag, full_mask, lane)) return;
 
     const uint32_t target_prefix = c_target_prefix;
 
     unsigned int local_hashes = 0;
     #define FLUSH_THRESHOLD 65536u
+    // Full warps: warp-reduced single atomicAdd per warp (unchanged fast
+    // path). Partial warps (small-range runs only): direct per-thread
+    // atomicAdd — trivial volume, and keeps shfl accesses inside the mask.
     #define WARP_FLUSH_HASHES() do { \
-        unsigned long long v = warp_reduce_add_ull((unsigned long long)local_hashes); \
-        if (lane == 0 && v) atomicAdd(hashes_accum, v); \
+        if (full_mask == 0xFFFFFFFFu) { \
+            unsigned long long v = warp_reduce_add_ull((unsigned long long)local_hashes); \
+            if (lane == 0 && v) atomicAdd(hashes_accum, v); \
+        } else if (local_hashes) { \
+            atomicAdd(hashes_accum, (unsigned long long)local_hashes); \
+        } \
         local_hashes = 0; \
     } while (0)
     #define MAYBE_WARP_FLUSH() do { if ((local_hashes & (FLUSH_THRESHOLD - 1u)) == 0u) WARP_FLUSH_HASHES(); } while (0)
@@ -510,8 +523,19 @@ int main(int argc, char** argv) {
 
     int device=0; cudaDeviceProp prop{};
     if (cudaGetDevice(&device)!=cudaSuccess || cudaGetDeviceProperties(&prop, device)!=cudaSuccess) {
-        std::cerr<<"CUDA init error\n"; return EXIT_FAILURE;
+        std::cerr<<"CUDA init error: "<<cudaGetErrorString(cudaGetLastError())<<"\n"; return EXIT_FAILURE;
     }
+
+    // CUDA error check helper — reports the actual CUDA error name and
+    // description and exits with a dedicated error code (never converts a
+    // CUDA failure into a successful exit).
+    auto ck = [](cudaError_t e, const char* msg){
+        if (e != cudaSuccess) {
+            std::cerr << "CUDA Error (" << cudaGetErrorName(e) << ") in " << msg
+                      << ": " << cudaGetErrorString(e) << "\n";
+            std::exit(2);
+        }
+    };
 
     cudaDeviceSetCacheConfig(cudaFuncCachePreferL1);
 
@@ -555,10 +579,25 @@ int main(int argc, char** argv) {
 
     uint64_t threadsTotal = pick_threads_total(upper);
     if (threadsTotal == 0ull) {
+        // Small-range fallback: fewer batches than one full block (or no
+        // 256-multiple of threads divides total_batches). Allow a partial
+        // final block: the kernel bounds-checks gid and derives its warp
+        // mask from an entry ballot, so partially-filled warps stay
+        // correct. Invariants kept: threadsTotal divides total_batches
+        // (per-thread work stays an exact whole number of batches) and
+        // memory/user caps are respected. Scan is bounded by upper, which
+        // is small whenever the 256-multiple pick fails.
+        uint64_t t = upper;
+        while (t >= 1ull && (total_batches_u64 % t) != 0ull) --t;
+        threadsTotal = t;
+    }
+    if (threadsTotal == 0ull) {
         std::cerr << "Error: failed to pick threadsTotal satisfying divisibility.\n";
         return EXIT_FAILURE;
     }
-    int blocks = (int)(threadsTotal / (uint64_t)threadsPerBlock);
+    // ceil: with the small-range fallback the last block may be partial
+    // (threadsTotal need not be a multiple of threadsPerBlock).
+    int blocks = (int)((threadsTotal + (uint64_t)threadsPerBlock - 1) / (uint64_t)threadsPerBlock);
 
     uint64_t per_thread_cnt[4]; uint64_t r_u64 = 0ull;
     divmod_256_by_u64(range_len, threadsTotal, per_thread_cnt, r_u64);
@@ -570,8 +609,8 @@ int main(int argc, char** argv) {
 
     uint64_t* h_counts256     = nullptr;
     uint64_t* h_start_scalars = nullptr;
-    cudaHostAlloc(&h_counts256,     threadsTotal * 4 * sizeof(uint64_t), cudaHostAllocWriteCombined | cudaHostAllocMapped);
-    cudaHostAlloc(&h_start_scalars, threadsTotal * 4 * sizeof(uint64_t), cudaHostAllocWriteCombined | cudaHostAllocMapped);
+    ck(cudaHostAlloc(&h_counts256,     threadsTotal * 4 * sizeof(uint64_t), cudaHostAllocWriteCombined | cudaHostAllocMapped), "cudaHostAlloc(h_counts256)");
+    ck(cudaHostAlloc(&h_start_scalars, threadsTotal * 4 * sizeof(uint64_t), cudaHostAllocWriteCombined | cudaHostAllocMapped), "cudaHostAlloc(h_start_scalars)");
 
     for (uint64_t i = 0; i < threadsTotal; ++i) {
         h_counts256[i*4+0] = per_thread_cnt[0];
@@ -601,20 +640,13 @@ int main(int argc, char** argv) {
                            | ((uint32_t)target_hash160[1] << 8)
                            | ((uint32_t)target_hash160[2] << 16)
                            | ((uint32_t)target_hash160[3] << 24);
-        cudaMemcpyToSymbol(c_target_prefix, &prefix_le, sizeof(prefix_le));
-        cudaMemcpyToSymbol(c_target_hash160, target_hash160, 20);
+        ck(cudaMemcpyToSymbol(c_target_prefix, &prefix_le, sizeof(prefix_le)), "cudaMemcpyToSymbol(c_target_prefix)");
+        ck(cudaMemcpyToSymbol(c_target_hash160, target_hash160, 20), "cudaMemcpyToSymbol(c_target_hash160)");
     }
 
     uint64_t *d_start_scalars=nullptr, *d_Px=nullptr, *d_Py=nullptr, *d_Rx=nullptr, *d_Ry=nullptr, *d_counts256=nullptr;
     int *d_found_flag=nullptr; FoundResult *d_found_result=nullptr;
     unsigned long long *d_hashes_accum=nullptr; unsigned int *d_any_left=nullptr;
-
-    auto ck = [](cudaError_t e, const char* msg){
-        if (e != cudaSuccess) {
-            std::cerr << msg << ": " << cudaGetErrorString(e) << "\n";
-            std::exit(EXIT_FAILURE);
-        }
-    };
 
     ck(cudaMalloc(&d_start_scalars, threadsTotal * 4 * sizeof(uint64_t)), "cudaMalloc(d_start_scalars)");
     ck(cudaMalloc(&d_Px,           threadsTotal * 4 * sizeof(uint64_t)), "cudaMalloc(d_Px)");
@@ -642,7 +674,7 @@ int main(int argc, char** argv) {
 
     {
         uint64_t* h_scalars_half = nullptr;
-        cudaHostAlloc(&h_scalars_half, (size_t)half * 4 * sizeof(uint64_t), cudaHostAllocWriteCombined | cudaHostAllocMapped);
+        ck(cudaHostAlloc(&h_scalars_half, (size_t)half * 4 * sizeof(uint64_t), cudaHostAllocWriteCombined | cudaHostAllocMapped), "cudaHostAlloc(h_scalars_half)");
         std::memset(h_scalars_half, 0, (size_t)half * 4 * sizeof(uint64_t));
         for (uint32_t k = 0; k < half; ++k) h_scalars_half[(size_t)k*4 + 0] = (uint64_t)(k + 1);
 
@@ -670,7 +702,7 @@ int main(int argc, char** argv) {
     }
     {
         uint64_t* h_scalarB = nullptr;
-        cudaHostAlloc(&h_scalarB, 4 * sizeof(uint64_t), cudaHostAllocWriteCombined | cudaHostAllocMapped);
+        ck(cudaHostAlloc(&h_scalarB, 4 * sizeof(uint64_t), cudaHostAllocWriteCombined | cudaHostAllocMapped), "cudaHostAlloc(h_scalarB)");
         std::memset(h_scalarB, 0, 4 * sizeof(uint64_t));
         h_scalarB[0] = (uint64_t)B;
 
@@ -694,7 +726,7 @@ int main(int argc, char** argv) {
         cudaFreeHost(h_scalarB);
     }
 
-    size_t freeB=0,totalB=0; cudaMemGetInfo(&freeB,&totalB);
+    size_t freeB=0,totalB=0; ck(cudaMemGetInfo(&freeB,&totalB), "cudaMemGetInfo");
     size_t usedB = totalB - freeB;
     double util = totalB ? (double)usedB * 100.0 / (double)totalB : 0.0;
 
@@ -725,6 +757,8 @@ int main(int argc, char** argv) {
 
     bool stop_all = false;
     bool completed_all = false;
+    bool runtime_error = false;
+    std::string runtime_error_msg;
     while (!stop_all) {
         if (g_sigint) std::cerr << "\n[Ctrl+C] Interrupt received. Finishing current kernel slice and exiting...\n";
 
@@ -743,7 +777,10 @@ int main(int argc, char** argv) {
         );
         cudaError_t launchErr = cudaGetLastError();
         if (launchErr != cudaSuccess) {
-            std::cerr << "\nKernel launch error: " << cudaGetErrorString(launchErr) << "\n";
+            std::cerr << "\nKernel launch error (" << cudaGetErrorName(launchErr)
+                      << "): " << cudaGetErrorString(launchErr) << "\n";
+            runtime_error = true;
+            runtime_error_msg = "kernel launch failed";
             stop_all = true;
         }
 
@@ -773,12 +810,20 @@ int main(int argc, char** argv) {
 
             cudaError_t qs = cudaStreamQuery(streamKernel);
             if (qs == cudaSuccess) break;
-            else if (qs != cudaErrorNotReady) { cudaGetLastError(); stop_all = true; break; }
+            else if (qs != cudaErrorNotReady) {
+                std::cerr << "\nCUDA stream error (" << cudaGetErrorName(qs)
+                          << "): " << cudaGetErrorString(qs) << "\n";
+                runtime_error = true;
+                runtime_error_msg = "stream query failed";
+                (void)cudaGetLastError();
+                stop_all = true;
+                break;
+            }
 
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
 
-        cudaStreamSynchronize(streamKernel);
+        ck(cudaStreamSynchronize(streamKernel), "stream synchronize");
         std::cout.flush();
         if (stop_all || g_sigint) break;
 
@@ -791,12 +836,15 @@ int main(int argc, char** argv) {
         if (h_any == 0u) { completed_all = true; break; }
     }
 
-    cudaDeviceSynchronize();
+    ck(cudaDeviceSynchronize(), "device synchronize");
     std::cout << "\n";
 
     int h_found_flag = 0;
     ck(cudaMemcpy(&h_found_flag, d_found_flag, sizeof(int), cudaMemcpyDeviceToHost), "final read found_flag");
 
+    // Exit codes: 0 = found, 1 = exhaustive not-found, 130 = interrupted,
+    // 2 = CUDA/runtime error. (Invalid arguments exit 1 earlier, before
+    // any GPU work.)
     int exit_code = EXIT_SUCCESS;
 
     if (h_found_flag == FOUND_READY) {
@@ -805,17 +853,23 @@ int main(int argc, char** argv) {
         std::cout << "\n======== FOUND MATCH! =================================\n";
         std::cout << "Private Key   : " << formatHex256(host_result.scalar) << "\n";
         std::cout << "Public Key    : " << formatCompressedPubHex(host_result.Rx, host_result.Ry) << "\n";
+    } else if (runtime_error) {
+        std::cout << "======== CUDA ERROR ===================================\n";
+        std::cout << "Execution failed: " << runtime_error_msg
+                  << ". See stderr above for the CUDA error details.\n";
+        exit_code = 2;
+    } else if (g_sigint) {
+        std::cout << "======== INTERRUPTED (Ctrl+C) ==========================\n";
+        std::cout << "Search was interrupted by user. Partial progress above.\n";
+        exit_code = 130;
+    } else if (completed_all) {
+        std::cout << "======== KEY NOT FOUND (exhaustive) ===================\n";
+        std::cout << "Target hash160 was not found within the specified range.\n";
+        exit_code = 1;
     } else {
-        if (g_sigint) {
-            std::cout << "======== INTERRUPTED (Ctrl+C) ==========================\n";
-            std::cout << "Search was interrupted by user. Partial progress above.\n";
-            exit_code = 130;
-        } else if (completed_all) {
-            std::cout << "======== KEY NOT FOUND (exhaustive) ===================\n";
-            std::cout << "Target hash160 was not found within the specified range.\n";
-        } else {
-            std::cout << "======== TERMINATED ===================================\n";
-        }
+        std::cout << "======== TERMINATED ===================================\n";
+        std::cout << "Execution stopped without completing the range and without a match.\n";
+        exit_code = 2;
     }
 
     cudaFree(d_start_scalars); cudaFree(d_Px); cudaFree(d_Py); cudaFree(d_Rx); cudaFree(d_Ry);

@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="420" viewBox="0 0 900 420" role="img" aria-label="Grid sweep comparison: RTX 5090 vs RTX PRO 6000">
+<rect width="900" height="420" rx="12" fill="#0b1017"/>
+<text x="450.0" y="30" text-anchor="middle" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="16" font-weight="700" fill="#e8f1f8">Grid Sweep — Best Observed Throughput (Mkeys/s)</text>
+<text x="450.0" y="50" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#8fa3b8">early-termination known-answer runs · commit b3d13be · CUDA 13.4 · 2026-11-05</text>
+<rect x="64" y="58" width="10" height="10" fill="#00d4ff"/>
+<text x="80" y="67" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="11" fill="#8fa3b8">GeForce RTX 5090 (170 SM)</text>
+<rect x="274" y="58" width="10" height="10" fill="#8a5cf6"/>
+<text x="290" y="67" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="11" fill="#8fa3b8">RTX PRO 6000 Blackwell (188 SM)</text>
+<line x1="64" y1="354.0" x2="884" y2="354.0" stroke="#1d2a3a" stroke-width="1"/>
+<text x="56" y="358.0" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#8fa3b8">0</text>
+<line x1="64" y1="321.1" x2="884" y2="321.1" stroke="#1d2a3a" stroke-width="1"/>
+<text x="56" y="325.1" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#8fa3b8">1000</text>
+<line x1="64" y1="288.1" x2="884" y2="288.1" stroke="#1d2a3a" stroke-width="1"/>
+<text x="56" y="292.1" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#8fa3b8">2000</text>
+<line x1="64" y1="255.2" x2="884" y2="255.2" stroke="#1d2a3a" stroke-width="1"/>
+<text x="56" y="259.2" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#8fa3b8">3000</text>
+<line x1="64" y1="222.2" x2="884" y2="222.2" stroke="#1d2a3a" stroke-width="1"/>
+<text x="56" y="226.2" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#8fa3b8">4000</text>
+<line x1="64" y1="189.3" x2="884" y2="189.3" stroke="#1d2a3a" stroke-width="1"/>
+<text x="56" y="193.3" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#8fa3b8">5000</text>
+<line x1="64" y1="156.4" x2="884" y2="156.4" stroke="#1d2a3a" stroke-width="1"/>
+<text x="56" y="160.4" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#8fa3b8">6000</text>
+<line x1="64" y1="123.4" x2="884" y2="123.4" stroke="#1d2a3a" stroke-width="1"/>
+<text x="56" y="127.4" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#8fa3b8">7000</text>
+<line x1="64" y1="90.5" x2="884" y2="90.5" stroke="#1d2a3a" stroke-width="1"/>
+<text x="56" y="94.5" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#8fa3b8">8000</text>
+<line x1="64" y1="74" x2="64" y2="354" stroke="#1d2a3a" stroke-width="1"/>
+<rect x="74.2" y="95.6" width="22" height="258.4" rx="2" fill="#00d4ff">
+</rect>
+<text x="85.2" y="91.6" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="7.5" fill="#e8f1f8">7844</text>
+<rect x="100.2" y="108.5" width="22" height="245.5" rx="2" fill="#8a5cf6" stroke="#ffffff" stroke-width="1.5">
+</rect>
+<text x="111.2" y="104.5" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="7.5" fill="#e8f1f8">7452</text>
+<text x="98.2" y="370.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" fill="#8fa3b8">128,64</text>
+<rect x="142.5" y="91.4" width="22" height="262.6" rx="2" fill="#00d4ff">
+</rect>
+<text x="153.5" y="87.4" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="7.5" fill="#e8f1f8">7970</text>
+<rect x="168.5" y="109.7" width="22" height="244.3" rx="2" fill="#8a5cf6">
+</rect>
+<text x="179.5" y="105.7" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="7.5" fill="#e8f1f8">7416</text>
+<text x="166.5" y="370.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" fill="#8fa3b8">128,128</text>
+<rect x="210.8" y="96.2" width="22" height="257.8" rx="2" fill="#00d4ff">
+</rect>
+<text x="221.8" y="92.2" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="7.5" fill="#e8f1f8">7827</text>
+<rect x="236.8" y="113.7" width="22" height="240.3" rx="2" fill="#8a5cf6">
+</rect>
+<text x="247.8" y="109.7" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="7.5" fill="#e8f1f8">7295</text>
+<text x="234.8" y="370.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" fill="#8fa3b8">128,256</text>
+<rect x="279.2" y="90.0" width="22" height="264.0" rx="2" fill="#00d4ff">
+</rect>
+<text x="290.2" y="86.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="7.5" fill="#e8f1f8">8015</text>
+<rect x="305.2" y="118.7" width="22" height="235.3" rx="2" fill="#8a5cf6">
+</rect>
+<text x="316.2" y="114.7" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="7.5" fill="#e8f1f8">7142</text>
+<text x="303.2" y="370.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" fill="#8fa3b8">256,64</text>
+<text x="371.5" y="340.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" fill="#8fa3b8">N/A</text>
+<text x="371.5" y="370.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" fill="#8fa3b8">256,128</text>
+<rect x="415.8" y="96.6" width="22" height="257.4" rx="2" fill="#00d4ff">
+</rect>
+<text x="426.8" y="92.6" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="7.5" fill="#e8f1f8">7814</text>
+<rect x="441.8" y="121.5" width="22" height="232.5" rx="2" fill="#8a5cf6">
+</rect>
+<text x="452.8" y="117.5" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="7.5" fill="#e8f1f8">7058</text>
+<text x="439.8" y="370.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" fill="#8fa3b8">256,256</text>
+<rect x="484.2" y="86.1" width="22" height="267.9" rx="2" fill="#00d4ff" stroke="#ffffff" stroke-width="1.5">
+</rect>
+<text x="495.2" y="82.1" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="7.5" fill="#e8f1f8">8133</text>
+<rect x="510.2" y="108.7" width="22" height="245.3" rx="2" fill="#8a5cf6">
+</rect>
+<text x="521.2" y="104.7" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="7.5" fill="#e8f1f8">7448</text>
+<text x="508.2" y="370.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" fill="#8fa3b8">512,64</text>
+<rect x="552.5" y="119.6" width="22" height="234.4" rx="2" fill="#00d4ff">
+</rect>
+<text x="563.5" y="115.6" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="7.5" fill="#e8f1f8">7116</text>
+<rect x="578.5" y="147.2" width="22" height="206.8" rx="2" fill="#8a5cf6">
+</rect>
+<text x="589.5" y="143.2" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="7.5" fill="#e8f1f8">6276</text>
+<text x="576.5" y="370.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" fill="#8fa3b8">512,128</text>
+<rect x="620.8" y="96.0" width="22" height="258.0" rx="2" fill="#00d4ff">
+</rect>
+<text x="631.8" y="92.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="7.5" fill="#e8f1f8">7833</text>
+<rect x="646.8" y="121.4" width="22" height="232.6" rx="2" fill="#8a5cf6">
+</rect>
+<text x="657.8" y="117.4" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="7.5" fill="#e8f1f8">7060</text>
+<text x="644.8" y="370.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" fill="#8fa3b8">512,256</text>
+<rect x="689.2" y="166.3" width="22" height="187.7" rx="2" fill="#00d4ff">
+</rect>
+<text x="700.2" y="162.3" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="7.5" fill="#e8f1f8">5698</text>
+<rect x="715.2" y="147.5" width="22" height="206.5" rx="2" fill="#8a5cf6">
+</rect>
+<text x="726.2" y="143.5" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="7.5" fill="#e8f1f8">6268</text>
+<text x="713.2" y="370.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" fill="#8fa3b8">1024,64</text>
+<rect x="757.5" y="119.5" width="22" height="234.5" rx="2" fill="#00d4ff">
+</rect>
+<text x="768.5" y="115.5" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="7.5" fill="#e8f1f8">7119</text>
+<rect x="783.5" y="147.6" width="22" height="206.4" rx="2" fill="#8a5cf6">
+</rect>
+<text x="794.5" y="143.6" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="7.5" fill="#e8f1f8">6265</text>
+<text x="781.5" y="370.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" fill="#8fa3b8">1024,128</text>
+<rect x="825.8" y="95.9" width="22" height="258.1" rx="2" fill="#00d4ff">
+</rect>
+<text x="836.8" y="91.9" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="7.5" fill="#e8f1f8">7835</text>
+<rect x="851.8" y="121.2" width="22" height="232.8" rx="2" fill="#8a5cf6">
+</rect>
+<text x="862.8" y="117.2" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="7.5" fill="#e8f1f8">7066</text>
+<text x="849.8" y="370.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" fill="#8fa3b8">1024,256</text>
+<text x="450.0" y="394" text-anchor="middle" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="10" fill="#8fa3b8">--grid: points-per-batch, batches-per-SM · white outline = per-GPU best</text>
+<text x="450.0" y="410" text-anchor="middle" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="10" fill="#8fa3b8">N/A = reference key found, no speed line produced (not zero)</text>
+</svg>

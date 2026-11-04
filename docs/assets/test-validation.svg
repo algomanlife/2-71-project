@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="170" viewBox="0 0 900 170" role="img" aria-label="Test and validation status">
+  <defs>
+    <linearGradient id="vbg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0b1017"/>
+      <stop offset="1" stop-color="#0d1420"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="170" rx="12" fill="url(#vbg)"/>
+  <text x="450" y="32" text-anchor="middle" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="15" font-weight="700" fill="#f2f7fb">Correctness Validation — Executed on Hardware</text>
+
+  <g font-family="ui-monospace, Menlo, Consolas, monospace">
+    <!-- 19/19 -->
+    <rect x="36" y="52" width="260" height="94" rx="10" fill="#101826" stroke="#1d2a3a"/>
+    <text x="166" y="80" text-anchor="middle" font-size="12" fill="#8fa3b8">unit + GPU tests</text>
+    <text x="166" y="112" text-anchor="middle" font-size="30" font-weight="700" fill="#3fb950">19/19</text>
+    <text x="166" y="132" text-anchor="middle" font-size="10" fill="#5b7391">PASS · RTX 5090</text>
+
+    <!-- 528/528 -->
+    <rect x="320" y="52" width="260" height="94" rx="10" fill="#101826" stroke="#1d2a3a"/>
+    <text x="450" y="80" text-anchor="middle" font-size="12" fill="#8fa3b8">proof suite (proof.py)</text>
+    <text x="450" y="112" text-anchor="middle" font-size="30" font-weight="700" fill="#3fb950">528/528</text>
+    <text x="450" y="132" text-anchor="middle" font-size="10" fill="#5b7391">PASS · RTX 5090 only</text>
+
+    <!-- 12/12 -->
+    <rect x="604" y="52" width="260" height="94" rx="10" fill="#101826" stroke="#1d2a3a"/>
+    <text x="734" y="80" text-anchor="middle" font-size="12" fill="#8fa3b8">grid configs found key</text>
+    <text x="734" y="112" text-anchor="middle" font-size="30" font-weight="700" fill="#3fb950">12/12</text>
+    <text x="734" y="132" text-anchor="middle" font-size="10" fill="#5b7391">both GPUs · 256,128 no speed line</text>
+  </g>
+  <text x="450" y="158" text-anchor="middle" font-family="ui-sans-serif, -apple-system, Segoe UI" font-size="9.5" fill="#5b7391">suites are strong evidence for tested configurations, not a proof of complete correctness · details: docs/testing/VALIDATION.md</text>
+</svg>

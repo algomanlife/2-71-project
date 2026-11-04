@@ -1,0 +1,15 @@
+# Build artifacts
+project-2-71
+*.o
+*.pyc
+__pycache__/
+
+# Test/benchmark run outputs
+tests/**/__pycache__/
+project_2_71_tests_results.txt
+cyclone_tests_results.txt
+
+# Editors
+.vscode/
+.idea/
+*.swp

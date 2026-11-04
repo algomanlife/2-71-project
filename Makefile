@@ -27,7 +27,10 @@ PTX_ARCH ?= $(lastword $(SM_ARCHS_SORTED))
 GENCODE := $(foreach arch,$(SM_ARCHS_SORTED),-gencode arch=compute_$(arch),code=sm_$(arch))
 GENCODE += -gencode arch=compute_$(PTX_ARCH),code=compute_$(PTX_ARCH)
 
-NVCC_FLAGS := -O3 -rdc=true -use_fast_math --ptxas-options=-O3 $(GENCODE)
+# Extra nvcc flags (e.g. NVCC_EXTRA="-DMAX_BATCH_SIZE=512" for experiment E3
+# in docs/research/STACK_FRAME_INVESTIGATION.md).
+NVCC_EXTRA ?=
+NVCC_FLAGS := -O3 -rdc=true -use_fast_math --ptxas-options=-O3 $(GENCODE) $(NVCC_EXTRA)
 CXXFLAGS   := -std=c++17
 LDFLAGS    := -lcudadevrt -cudart=static
 

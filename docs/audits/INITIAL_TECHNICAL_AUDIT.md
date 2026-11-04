@@ -273,3 +273,29 @@ smaller B lowers H1 but raises per-key inversion amortization cost).
 **Next steps:** Phase 2 (CUDA 13 / sm_120 compatibility), Phase 3
 (baseline + validation harness), then hypothesis-driven optimization PRs
 gated on profiler evidence per `docs/research/MAXIMUM_PERFORMANCE_ROADMAP.md`.
+
+---
+
+## Addendum (2026-11-04): compile evidence from CI (CUDA 13.0, sm_120)
+
+CI run 41903696856 (CPU-only runner, `nvidia/cuda:13.0.0-devel-ubuntu24.04`,
+`make GPU_ARCH=120 SM_ARCHS="120"`) compiled successfully and produced:
+
+**[MEASURED FACT — compile-time only, not runtime performance]**
+
+| Function | sm_120 ptxas report |
+|---|---|
+| `kernel_point_add_and_check_oneinv` | **16,688 bytes stack frame**, 8 bytes spill stores / 16 bytes spill loads |
+| `_ModInv` | 192 bytes stack frame, 108 bytes spill stores / 108 bytes spill loads |
+
+Interpretation:
+- The 16.7 KB per-thread stack frame **confirms the existence** of the
+  local-memory footprint predicted by H1 (the `subp[512][4]` worst case at
+  `MAX_BATCH_SIZE=1024` compiles in, since `B` is a runtime parameter).
+  Whether this dominates runtime memory traffic still requires Nsight
+  Compute on hardware — H1 remains a *performance* hypothesis, but its
+  structural premise is now compile-verified.
+- H2 (register pressure) is **weakened** for the main kernel: only 8/16
+  bytes of register spill; the `__launch_bounds__(256,2)` cap is not the
+  binding constraint on this compilation.
+- The sm_120 build (SASS + PTX) compiles cleanly on CUDA 13.0.

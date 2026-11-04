@@ -1,218 +1,303 @@
-# ⚡2^71 project: GPU Satoshi Puzzle Solver
+<p align="center">
+  <img src="docs/assets/project-banner.svg" alt="2^71 project — CUDA-accelerated secp256k1 research" width="720"/>
+</p>
 
-2^71 project is a GPU-powered solver for the **Satoshi puzzles**, designed to achieve extreme performance on modern NVIDIA GPUs.
-Leveraging **CUDA**, **warp-level parallelism**, and **batch EC operations**, 2^71 project pushes the limits of cryptographic key search.
+# 2^71 project
 
-The secp256k1 math is based on the excellent work from [JeanLucPons/VanitySearch](https://github.com/JeanLucPons/VanitySearch) (GPL-3.0), and [FixedPaul/VanitySearch-Bitcrack](https://github.com/FixedPaul) (AGPL-3.0) with major CUDA-specific modifications.
-Special thanks to Jean-Luc Pons for his foundational contributions to the cryptographic community.
-This project is a rebranded, independent continuation of [Dookoo2/CUDACyclone](https://github.com/Dookoo2/CUDACyclone); see [ATTRIBUTION.md](ATTRIBUTION.md).
+**CUDA-Accelerated secp256k1 Research & GPU Performance Engineering**
 
-2^71 project is also the **simplest CUDA-based project** for solving Satoshi puzzles on GPU.
-It was designed with clarity and minimalism in mind — making it easy to **compile, understand, and run**, even for those new to CUDA programming.
+[![CI](https://github.com/algomanlife/2-71-project/actions/workflows/ci.yml/badge.svg)](https://github.com/algomanlife/2-71-project/actions/workflows/ci.yml)
+![CUDA](https://img.shields.io/badge/CUDA-13.0-76b900?logo=nvidia)
+![Arch](https://img.shields.io/badge/arch-sm__120-00d4ff)
+![Blackwell](https://img.shields.io/badge/GPU-Blackwell-3b7bff)
+![Build](https://img.shields.io/badge/build-compile--verified-8a5cf6)
+![CPU tests](https://img.shields.io/badge/CPU%20reference%20tests-7%2F7%20pass-brightgreen)
+![GPU validation](https://img.shields.io/badge/GPU%20validation-pending%20hardware-orange)
+![Status](https://img.shields.io/badge/status-research%20%2F%20pre--release-lightgrey)
 
-Despite its simplicity, 2^71 project leverages **massive GPU parallelism** to achieve extreme performance in elliptic curve computations and Hash160 pipelines.
-
-⚠️ **Historical benchmark: 6.5Gkeys/s on RTX4090, 8.6Gkeys/s on RTX5090 (achieved by the original CUDACyclone project).**  
-⚠️ **For preventing decreasing GPU speed you need to use --slices option and not to start brute force with 256 points per batch! The best tune for 4090 is --grid 128,128 --slices 16**
-
----
-
-## ⚠️ Key skipping verification (proof.py)
-
-Earlier releases of the original project were skipping keys; this was fixed and verified with a small python script.
-The script is called **proof.py**. The script generates random scalars in a given range, calculates addresses, then runs the solver and at the end of the work shows how many keys were found and how many were not found. All should be found.
-Usage
-```
-usage: proof.py [-h] --range RANGE_ARG [--project-path PROJECT_PATH] [--grid GRID_ARG] [--batch BATCH] [--timeout TIMEOUT] [--start-count START_COUNT] [--end-count END_COUNT] [--quartile-count QUARTILE_COUNT]
-```
-Sample start
-```
-python3 proof.py --range 200000000:3FFFFFFFF --grid 512,512
-```
-Results
-```
-================ Summary by blocks ================
-Range start A (start+2k)           : total= 128  success= 128  fail=   0
-Range start B (start+1+2k)         : total= 128  success= 128  fail=   0
-Range end A (end-2k)               : total= 128  success= 128  fail=   0
-Range end B (end-1-2k)             : total= 128  success= 128  fail=   0
-Full mod 512 residue coverage      : total= 256  success= 256  fail=   0
-Random Q1 (0–25%)                  : total=  20  success=  20  fail=   0
-Random Q2 (25–50%)                 : total=  20  success=  20  fail=   0
-Random Q3 (50–75%)                 : total=  20  success=  20  fail=   0
-Random Q4 (75–100%)                : total=  20  success=  20  fail=   0
-
-Done. Results in project_2_71_tests_results.txt. Successes=848 Failures=0
-```
-
-After speed upgrade on RTX 4060 - tests
-```
-================ Summary by blocks ================
-Range start A (start+2k)           : total= 128  success= 128  fail=   0
-Range start B (start+1+2k)         : total= 128  success= 128  fail=   0
-Range end A (end-2k)               : total= 128  success= 128  fail=   0
-Range end B (end-1-2k)             : total= 128  success= 128  fail=   0
-Full mod 512 residue coverage      : total= 256  success= 256  fail=   0
-Random Q1 (0–25%)                  : total=  20  success=  20  fail=   0
-Random Q2 (25–50%)                 : total=  20  success=  20  fail=   0
-Random Q3 (50–75%)                 : total=  20  success=  20  fail=   0
-Random Q4 (75–100%)                : total=  20  success=  20  fail=   0
-
-Done. Results in project_2_71_tests_results.txt. Successes=848 Failures=0
-
-```
-## 🚀 Key Features
-
-- **GPU Acceleration**: Optimized for NVIDIA GPUs with full CUDA support.
-- **Massive Parallelism**: Tens of thousands of threads computing elliptic curve points and **hash160** simultaneously.
-- **Batch EC Operations**: Efficient group addition and modular inversion with warp-level optimizations.
-- **Grid/Batch Control**: Fully configurable GPU execution with `--grid` parameter (threads per batch × points per batch).
-- **Cross-Platform**: Works on Linux and Windows (via WSL2 or MinGW cross-compilation).
-- **Cross Architecture**: Automatic compilation for different architectures (75 86 89).
-- **Extremely low VRAM usage**: Key feature! For low price rented GPU.
----
-
-## 🚀 Options
-- **--range**: range of search. Must be a power of two!
-- **--address**: P2PKH address.
-- **--target-hash160**: the same as address but hash160.
-- **--grid**: very useful parameter. Example --grid 512,512 - first 512 - number of points each thread will process in one batch (Points batch size)., second 512 - number of threads in one group (Threads per batch).
-- **--slices**: batch per thread for one kernel launch.
+> GPU solver for secp256k1 discrete-logarithm search problems (Bitcoin
+> "Satoshi puzzles"), engineered with an evidence-first performance
+> methodology: every optimization is gated on correctness tests and
+> measured benchmarks, never on assumptions.
 
 ---
 
-### ❔ Community benchmarks (historical, from the original project)
+## Overview
 
-Users have reported the following speeds:
+**2^71 project** searches a power-of-two scalar range for the secp256k1
+private key whose P2PKH address matches a given target. The entire search
+runs on NVIDIA GPUs:
 
-| GPU               | Grid      | Speed (Mkeys/s) | Notes                  |
-|-------------------|-----------|-----------------|------------------------|
-| RTX 4090          | 128,1024  | 6214 Mkeys/s    | Community report       |
-| RTX 4090          | 512,512   | 6038 Mkeys/s    | Community report       |
-| RTX 4060          | 512,512   | 1238 Mkeys/s    | Original author's GPU  |
-| RTX 4070 Ti Super | 512,1024  | 3170 Mkeys/s    | Community report       |
-| L4-2Q             | 512,256   | 1360 Mkeys/s    | Community report       |
-| RTX3070 mobile    | 256,256   | 1150 Mkeys/s    | Community report       |
+- One CUDA kernel computes elliptic-curve points with a
+  **single modular inversion per batch** (batch-inversion stride walk),
+  hashes each candidate public key (SHA-256 → RIPEMD-160 = `hash160`),
+  and short-circuits on a 4-byte prefix match before the full compare.
+- The host sizes the grid from device properties, manages sliced kernel
+  launches on a dedicated stream, and validates any hit before printing.
+- Build supports CUDA 12.8+ and CUDA 13.x with native Blackwell
+  (`sm_120`) SASS plus PTX fallback.
 
----
+**Status:** pre-release research project. Compilation is verified for
+CUDA 13 / `sm_120` in CI; **runtime validation and all performance
+measurements on RTX 5090 / RTX PRO 6000 are pending hardware access**
+(see [Performance](#performance--benchmarks)).
 
-## 🔷 Example Output
+The project is an independent continuation of Dookoo2's CUDACyclone with
+secp256k1 math derived from JeanLucPons/VanitySearch (GPL-3.0) and
+FixedPaul/VanitySearch-Bitcrack (AGPL-3.0) — see
+[Attribution](#attribution--license).
 
-Below is an example run of **2^71 project**.  
-(Historical captures from the original project; output format is identical.)
+## Key Features
 
-**RTX4060**
+**Implemented:**
+
+- CUDA secp256k1 field arithmetic with inline-PTX 64-bit carry chains
+- Batch inversion: one divsteps-based modular inverse per batch
+- ±G symmetric point walk with warp-level early exit
+- Single-block SHA-256 and RIPEMD-160 GPU pipeline (register-only)
+- Runtime grid configuration (`--grid`, `--slices`) with VRAM-aware sizing
+- CUDA 13 build support, `sm_120` SASS + PTX fallback, legacy `sm_75/86/89`
+- CPU reference test suite (RIPEMD-160/SHA-256/hash160/base58/secp256k1)
+- GPU correctness suite + end-to-end key-skip harness (`proof.py`)
+- Reproducible benchmark harness with environment capture and JSON records
+- CI quality gates (CUDA 13 container build, tests, hygiene)
+- ptxas register reports and sm_120 SASS census via CI
+
+**Planned** (see [roadmap](docs/research/MAXIMUM_PERFORMANCE_ROADMAP.md)):
+
+- Nsight Compute profiling on Blackwell hardware
+- Evidence-gated hot-kernel optimization program
+- Per-GPU tuned default launch configurations
+
+## Architecture
+
+<p align="center">
+  <img src="docs/assets/architecture.svg" alt="Execution architecture" width="720"/>
+</p>
+
+| Layer | What it does | Source |
+|---|---|---|
+| Host runtime | CLI, range/grid validation, pinned host buffers, launch loop, result output | `project_2_71.cu` |
+| CUDA execution | one-time setup kernels (G multiples, J = B·G), sliced search launches, non-blocking stream | `project_2_71.cu` |
+| EC arithmetic | secp256k1 field ops, batch inversion, ±G walk, divsteps `_ModInv` | `CUDAMath.h` |
+| Hash pipeline | 33-byte SHA-256 block → 32-byte RIPEMD-160 block, prefix prefilter, warp vote | `CUDAHash.cu` |
+| Validation | found-flag atomic CAS, host-side result formatting; tests cross-check against `ecdsa` reference | `project_2_71.cu`, `tests/` |
+
+Each search thread owns a base point and processes `B` keys per batch:
+the kernel computes prefix products of `(G_i − x)`, performs **one**
+modular inversion, then derives each candidate point by multiplication —
+the classic Montgomery batch-inversion trade of inversions for
+multiplications.
+
+## Hardware Compatibility
+
+| GPU | Arch | Compilation | Runtime verification | Benchmarks |
+|---|---|---|---|---|
+| RTX 5090 | `sm_120` | ✅ CI (CUDA 13.0, SASS+PTX) | ⬜ pending | ⬜ pending |
+| RTX PRO 6000 Blackwell | `sm_120` | ✅ CI (CUDA 13.0, SASS+PTX) | ⬜ pending | ⬜ pending |
+| RTX 40xx / 30xx (Ada, Ampere) | `sm_89/86` | ✅ CI | ⬜ not run by this project | ⬜ pending |
+| RTX 20xx (Turing) | `sm_75` | ✅ CI | ⬜ not run by this project | ⬜ pending |
+| pre-Turing (Maxwell/Pascal/Volta) | < `sm_75` | ❌ unsupported by CUDA 13 | — | — |
+
+Both primary GPUs are `sm_120` but not identical: RTX 5090 = 170 SM / 32 GB,
+RTX PRO 6000 Blackwell = 240 SM / 96 GB. The application auto-sizes from
+device properties, but optimal `--grid/--slices` must be measured per GPU.
+
+## Installation & Build
+
+**Requirements:** CUDA Toolkit 12.8+ (13.x recommended) with `nvcc` on
+`PATH`; NVIDIA driver R570+ for Blackwell hardware, R580+ for CUDA 13.x
+runtime (verify with `nvidia-smi`); Linux x86_64 (or WSL2 with a
+Windows-side driver); GNU make.
 
 ```bash
-./project-2-71 --range 2000000000:3FFFFFFFFF --address 1HBtApAFA9B2YZw3G2YKSMCtb3dVnjuNe2 --grid 512,256
-======== 2^71 project =================================
-======== PrePhase: GPU Information ====================
-Device               : NVIDIA GeForce RTX 4060 (compute 8.9)
-SM                   : 24
-ThreadsPerBlock      : 256
-Blocks               : 4096
-Points batch size    : 512
-Batches/SM           : 256
-Memory utilization   : 6.9% (538.3 MB / 7.63 GB)
-------------------------------------------------------- 
-Total threads        : 1048576
-
-======== Phase-1: BruteForce ==========================
-Time: 8.0 s | Speed: 1268.9 Mkeys/s | Count: 10204470016 | Progress: 7.42 %
-
-======== FOUND MATCH! =================================
-Private Key   : 00000000000000000000000000000000000000000000000000000022382FACD0
-Public Key    : 03C060E1E3771CBECCB38E119C2414702F3F5181A89652538851D2E3886BDD70C6
-```
-
-**RTX4090**
-```bash
-./project-2-71 --range 200000000000:3fffffffffff --address 1F3JRMWudBaj48EhwcHDdpeuy2jwACNxjP --grid 128,128 --slices 16
-======== 2^71 project =================================
-======== PrePhase: GPU Information ====================
-Device               : NVIDIA GeForce RTX 4090 (compute 8.9)
-SM                   : 128
-ThreadsPerBlock      : 256
-Blocks               : 16384
-Points batch size    : 128
-Batches/SM           : 128
-Batches/launch       : 16 (per thread)
-Memory utilization   : 4.8% (1.14 GB / 23.6 GB)
--------------------------------------------------------
-Total threads        : 4194304
-
-======== Phase-1: BruteForce (sliced) =================
-Time: 393.7 s | Speed: 6127.4 Mkeys/s | Count: 2421341587872 | Progress: 6.88 %
-
-======== FOUND MATCH! =================================
-Private Key   : 00000000000000000000000000000000000000000000000000002EC18388D544
-Public Key    : 03FD5487722D2576CB6D7081426B66A3E2986C1CE8358D479063FB5F2BB6DD5849
-```
-**RTX5090**
-```bash
-./project-2-71 --range 200000000000:3fffffffffff --address 1F3JRMWudBaj48EhwcHDdpeuy2jwACNxjP --grid 128,256
-======== 2^71 project =================================
-======== PrePhase: GPU Information ====================
-Device               : NVIDIA GeForce RTX 5090 (compute 12.0)
-SM                   : 170
-ThreadsPerBlock      : 256
-Blocks               : 1024
-Points batch size    : 128
-Batches/SM           : 8
-Memory utilization   : 1.7% (557.3 MB / 31.4 GB)
-------------------------------------------------------- 
-Total threads        : 262144
-
-======== Phase-1: BruteForce ==========================
-Time: 7.0 s | Speed: 8408.0 Mkeys/s | Count: 58545467200 | Progress: 0.17 %
-
-```
-**RTX3070 mobile**
-```bash
-./project-2-71 --range 2000000000:3FFFFFFFFF --address 1HBtApAFA9B2YZw3G2YKSMCtb3dVnjuNe2 --grid 512,256
-======== 2^71 project =================================
-======== PrePhase: GPU Information ====================
-Device               : NVIDIA GeForce RTX 3070 Laptop GPU (compute 8.6)
-SM                   : 40
-ThreadsPerBlock      : 256
-Blocks               : 8192
-Points batch size    : 512
-Batches/SM           : 256
-Batches/launch       : 64 (per thread)
-Memory utilization   : 64.0% (5.12 GB / 8.00 GB)
--------------------------------------------------------
-Total threads        : 2097152
-
-======== Phase-1: BruteForce (sliced) =================
-Time: 61.2 s | Speed: 1234.3 Mkeys/s | Count: 72707573152 | Progress: 52.90 %
-
-======== FOUND MATCH! =================================
-Private Key   : 00000000000000000000000000000000000000000000000000000022382FACD0
-Public Key    : 03C060E1E3771CBECCB38E119C2414702F3F5181A89652538851D2E3886BDD70C6
-```
-## 🛠️ Getting Started
-To get started with 2^71 project, clone the repository and type **make**  
-For a totally clean system (big thanks for **dev_nullish**):
-```bash
-apt update;
-apt-get install -y joe;
-apt-get install -y zip;
-apt-get install -y screen;
-apt-get install -y curl libcurl4;
-apt-get install build-essential;
-apt-get install -y gcc;
-apt-get install -y make;
-apt install cuda-toolkit;
 git clone https://github.com/algomanlife/2-71-project.git
-make
+cd 2-71-project
+make                 # prints toolkit, detected GPU, arch list, full flags
+make ptxas-info      # optional: per-kernel register/spill report
 ```
-## 🚧**Version**
-**V1.3**: Full CUDA Kernel rewrite again for preventing key skipping.    
-**V1.2**: Full CUDA Kernel rewrite.  
-**V1.1**: Switch pGx/pGy to constant memory due to VRAM thermal throttling.  
-**V1.0**: Release.
 
+Reproducible or GPU-less builds:
 
+```bash
+make GPU_ARCH=120 SM_ARCHS="120"              # pin to sm_120 only
+make GPU_ARCH=                                # skip GPU detection
+make NVCC_EXTRA="-DMAX_BATCH_SIZE=512"        # compile-time experiments
+```
 
-## ✌️**TIPS** (original author of CUDACyclone)
-BTC: bc1qtq4y9l9ajeyxq05ynq09z8p52xdmk4hqky9c8n
+**Verification:** CI compiles sm_120 + legacy architectures on every push
+in the CUDA 13 container. `./project-2-71` with no arguments prints usage
+to stderr and exits non-zero.
+
+**Troubleshooting:**
+
+- `nvcc: command not found` — install the CUDA toolkit and ensure
+  `nvcc` is on `PATH`, or set `CUDA_HOME`.
+- `Unsupported architecture` — old toolkit: sm_120 requires CUDA ≥ 12.8.
+- No GPU on the build machine — expected; `make` still compiles (pass
+  `GPU_ARCH=` to silence detection).
+- Runtime `CUDA init error` — driver issue; check `nvidia-smi` shows the
+  GPU and a sufficient driver version.
+
+## Usage
+
+```text
+project-2-71 --range <start_hex>:<end_hex> (--address <base58> | --target-hash160 <hex>)
+             [--grid A,B] [--slices N]
+```
+
+| Flag | Meaning | Constraints |
+|---|---|---|
+| `--range` | scalar search range, hex `start:end` | length must be a power of two; `start` aligned to the length |
+| `--address` | P2PKH target address (base58) | mutually exclusive with `--target-hash160` |
+| `--target-hash160` | target hash160, 40 hex chars | mutually exclusive with `--address` |
+| `--grid` | `A,B` = points-per-batch × batches-per-SM | A: even power of two ≤ 1024; range must be divisible by A |
+| `--slices` | batches per thread per kernel launch | 1 … 2^20 |
+
+Example (known-answer vector from the original project):
+
+```bash
+./project-2-71 --range 2000000000:3FFFFFFFFF \
+               --address 1HBtApAFA9B2YZw3G2YKSMCtb3dVnjuNe2 \
+               --grid 512,256
+```
+
+Output: startup banner with GPU info (device, SM count, threads, memory),
+then per-second progress lines
+`Time: … | Speed: … Mkeys/s | Count: … | Progress: … %`, and on a match:
+
+```text
+======== FOUND MATCH! =================================
+Private Key   : 00000000000000000000000000000000000000000000000000000022382FACD0
+Public Key    : 03C060E1E3771CBECCB38E119C2414702F3F5181A89652538851D2E3886BDD70C6
+```
+
+Exit codes: `0` match found; `130` interrupted (Ctrl+C, finishes the
+current slice); non-zero on invalid arguments or CUDA errors.
+
+Common errors: `range length must be a power of two`, `start must be
+aligned to the range length`, `provide either --address or
+--target-hash160, not both` — all from argument validation before any GPU
+work.
+
+## Performance & Benchmarks
+
+<p align="center">
+  <img src="docs/assets/performance-overview.svg" alt="Performance status" width="720"/>
+</p>
+
+### A. Historical upstream benchmarks (CUDACyclone, unverified context)
+
+| GPU | Grid | Throughput | Source |
+|---|---|---|---|
+| RTX 5090 | 128,256 | ~8.4 Gkeys/s | CUDACyclone README example |
+| RTX 4090 | 128,1024 | 6214 Mkeys/s | community report |
+| RTX 4060 | 512,512 | 1238 Mkeys/s | original author's report |
+
+These numbers predate this project, were produced with unknown
+toolchain/driver state, and are retained **only as attribution context**.
+They are not evidence about this codebase.
+
+### B. Current verified benchmarks
+
+**None yet.** No run has been executed on target hardware by this project.
+
+### C. Pending hardware validation
+
+| Test | GPU | Deliverable |
+|---|---|---|
+| Correctness suite + `proof.py` | RTX 5090, RTX PRO 6000 | pass/fail in issue tracker |
+| First baseline records (`benchmarks/baseline/run_baseline.sh`) | both | `docs/benchmarks/data/*.json` + BASELINE_RESULTS table |
+| Grid/slices sweep (A5) | both | per-GPU optimal configuration |
+| Nsight Compute profile (E1) | both | local-memory/stall evidence for O-05 decision |
+
+Recorded results will always include GPU model, CUDA version, commit
+hash, configuration, throughput, correctness status, measurement date,
+and a link to the JSON record. Charts appear only when backed by measured
+data.
+
+## Performance Engineering
+
+Ongoing program — [full roadmap](docs/research/MAXIMUM_PERFORMANCE_ROADMAP.md):
+
+- **[Stack-frame investigation](docs/research/STACK_FRAME_INVESTIGATION.md)** —
+  the hot kernel's 16,688 B local frame is fully attributed
+  (`subp[]` = 16·B bytes; CI-measured SASS census); whether it limits
+  runtime throughput is decided by experiments E1–E4 on hardware.
+- **Correctness-first optimization** — every `opt/*` PR carries the full
+  test suite and a benchmark plan; regressions are recorded, not hidden.
+- **[Performance history](docs/benchmarks/PERFORMANCE_HISTORY.md)** —
+  cumulative measured tracking with per-GPU baselines.
+- **Compile-time evidence** — CI emits ptxas register reports and sm_120
+  SASS dumps on every change (kernel-resource-matrix job, artifacts
+  retained 90 days).
+
+## Testing & Validation
+
+| Layer | Status | Where |
+|---|---|---|
+| CPU reference tests (RIPEMD-160/SHA-256 official vectors, hash160, base58, secp256k1 vs `ecdsa`) | ✅ pass (CI + local) | `tests/test_reference.py` |
+| Pure-python RIPEMD-160 reference | ✅ validated vs official vectors + hashlib | `tests/reference_ripenmd160.py` |
+| GPU correctness suite (known-answer, CPU↔GPU consistency, boundaries, no-skip/duplicate, repeatability) | ⬜ **pending hardware** (skips visibly without GPU) | `tests/test_gpu_validation.py` |
+| End-to-end key-skip harness | ⬜ **pending hardware** | `proof.py` |
+| CUDA 13 / sm_120 compilation | ✅ CI green | `.github/workflows/ci.yml` |
+| SASS resource census | ✅ CI | kernel-resource-matrix job |
+
+```bash
+pip install ecdsa
+python3 -m unittest discover -s tests -v   # CPU suite runs anywhere
+python3 proof.py --range 200000000:3FFFFFFFF --grid 512,512   # needs GPU
+```
+
+A skip is never reported as a pass; CPU CI is never presented as GPU
+validation.
+
+## Development Roadmap
+
+| Phase | Scope | Status |
+|---|---|---|
+| 1 | Repository migration & rebranding | ✅ complete |
+| 2 | CUDA 13 modernization & validation infrastructure | ✅ complete (PRs #7–#12) |
+| 3 | Foundational optimization & performance research | 🔄 in progress (stack-frame investigation, dead-code removal, roadmap v2) |
+| 4 | Hardware benchmarking & architecture-specific tuning | ⬜ pending RTX 5090 / PRO 6000 access |
+| 5 | Advanced performance optimization (evidence-gated) | ⬜ gated on Phase 4 |
+
+## Documentation
+
+| Document | Content |
+|---|---|
+| [Technical audit](docs/audits/INITIAL_TECHNICAL_AUDIT.md) | execution flow, kernel analysis, hypotheses, sm_120 compile evidence |
+| [Stack-frame investigation](docs/research/STACK_FRAME_INVESTIGATION.md) | 16,688 B frame attribution, SASS census, experiments E1–E4 |
+| [CUDA 13 compatibility](docs/compatibility/CUDA13_BLACKWELL.md) | toolchain matrix, drivers, reproducible build |
+| [Optimization roadmap](docs/research/MAXIMUM_PERFORMANCE_ROADMAP.md) | evidence-gated proposal table |
+| [Baseline results](docs/benchmarks/BASELINE_RESULTS.md) | methodology + status (pending) |
+| [Performance history](docs/benchmarks/PERFORMANCE_HISTORY.md) | cumulative measured tracking |
+| [Benchmark harness](benchmarks/baseline/README.md) | how to run + record format |
+| [Attribution](ATTRIBUTION.md) | provenance & licensing audit |
+
+## Contributing
+
+- **Branches:** `audit/*`, `cuda13/*`, `opt/*`, `test/*`, `benchmark/*`,
+  `ci/*`, `docs/*` — one concern per branch.
+- **PRs:** objective, current implementation, proposed change, files,
+  rationale, correctness results, benchmark comparison, limitations,
+  rollback instructions (9 sections).
+- **Correctness is a merge gate:** CPU suite green always; GPU suite +
+  `proof.py` green for any hot-path change where hardware allows;
+  compile-only changes state that explicitly.
+- **Performance claims need records:** measured via
+  `benchmarks/baseline/run_baseline.sh`, referenced in
+  `PERFORMANCE_HISTORY.md`.
+- **Style:** match existing code (no reformatting churn); keep diffs
+  minimal and reviewable; never push to `main` directly.
+
+## Attribution & License
+
+2^71 project is an independent continuation of
+[CUDACyclone](https://github.com/Dookoo2/CUDACyclone) by Dookoo2
+(redistribution authorized by the author). secp256k1 math derives from
+[JeanLucPons/VanitySearch](https://github.com/JeanLucPons/VanitySearch)
+(GPL-3.0) and [FixedPaul/VanitySearch-Bitcrack](https://github.com/FixedPaul)
+(AGPL-3.0) with major CUDA modifications. Full audit:
+[ATTRIBUTION.md](ATTRIBUTION.md). The repository carries no license file
+yet — a GPL-3.0-compatible decision is tracked in the issue tracker.

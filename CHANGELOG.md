@@ -6,6 +6,36 @@ releases exist.
 
 ## [Unreleased]
 
+### Benchmark publication & performance program (2026-11-05)
+
+Added
+- First measured GPU results published: RTX 5090 (170 SM, CUDA 13.4)
+  best observed 8,133.0 Mkeys/s at grid `512,64`; RTX PRO 6000 Blackwell
+  (188 SM, CUDA 13.4) best observed 7,452.4 Mkeys/s at grid `128,64`;
+  full 12-configuration grid sweep on both GPUs with explicit
+  early-termination/known-answer labeling
+  (`docs/benchmarks/GRID_RESULTS.md`, machine-readable
+  `docs/benchmarks/data/grid-sweep-2026-11-05.json`, updated
+  `BASELINE_RESULTS.md` and `PERFORMANCE_HISTORY.md`).
+- Verified validation status: 19/19 unit+GPU tests (RTX 5090), 528/528
+  proof-suite tests (RTX 5090), 12/12 grid configs found reference key on
+  both GPUs (`docs/testing/VALIDATION.md`, with scope honesty rules).
+- `docs/architecture/CUDA_PIPELINE.md` (execution pipeline reference),
+  `docs/optimization/PERFORMANCE_BASELINE.md` (baseline, bottleneck
+  classification, E-series experiments),
+  `docs/optimization/EXPERIMENTS.md` (experiment log; EXP-01 prepared).
+- Repeatable benchmark infrastructure: `benchmarks/sweep/grid_sweep.sh`
+  (per-grid repetitions, medians, variance, power telemetry, JSON
+  records), `benchmarks/profile/ncu_profile.sh` (E1 Nsight Compute
+  metric set).
+- Build knob `RDC` (`make RDC=0`) for the whole-program-device-code A/B
+  experiment; default unchanged (rdc on).
+
+Changed
+- README redesigned around the measured results with three new SVG
+  assets (GPU performance cards, grid-sweep comparison chart, validation
+  status).
+
 ### GPU validation round 1 fixes (2026-11-05)
 
 Fixed

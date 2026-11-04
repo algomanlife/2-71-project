@@ -1,18 +1,24 @@
 # Baseline Results — 2^71 project
 
-**Status: PENDING — no measurements exist yet.** This project has not been
-built or run on target hardware (RTX 5090 / RTX PRO 6000 Blackwell) under
-the new validation framework. Nothing below is a measurement.
+**Status: first measured results published (best-observed,
+early-termination known-answer runs).** See the binding interpretation
+rules in [`GRID_RESULTS.md`](GRID_RESULTS.md) — these are not sustained
+throughput and not medians of repeated runs.
 
-## Measured results
+## Measured results (2026-11-05, commit `b3d13be`)
 
-| Commit | GPU | CUDA | Config | Correctness | Peak Mkeys/s | Record |
+| Commit | GPU | CUDA | Config | Correctness | Best observed Mkeys/s | Record |
 |---|---|---|---|---|---|---|
-| — | — | — | — | — | **pending hardware run** | — |
+| b3d13be | RTX 5090 (170 SM) | 13.4 | `512,64` | key found, suite 19/19 | 8,133.0 | [grid-sweep-2026-11-05.json](data/grid-sweep-2026-11-05.json) |
+| b3d13be | RTX PRO 6000 Blackwell (188 SM) | 13.4 | `128,64` | key found (12/12 grids) | 7,452.4 | [grid-sweep-2026-11-05.json](data/grid-sweep-2026-11-05.json) |
+| b3d13be | RTX 5090 | 13.4 | initial baseline | key found | 7,800.4 | same record |
+| b3d13be | RTX PRO 6000 | 13.4 | initial baseline | key found | 7,074.8 | same record |
 
-Records will be appended by `benchmarks/baseline/run_baseline.sh` as
-`docs/benchmarks/data/*.json` and summarized here by machine, never
-hand-typed.
+Full 12-configuration grid sweep: [`GRID_RESULTS.md`](GRID_RESULTS.md).
+
+**Label: "Best Observed — Grid Sweep"** (runs stopped when the known
+reference key was found). Sustained-throughput baselines with repetition
+and telemetry come from `benchmarks/sweep/grid_sweep.sh` in a later phase.
 
 ## Historical context (NOT a baseline of this project)
 
@@ -22,20 +28,19 @@ project, attribution in ATTRIBUTION.md):
 | GPU | Grid | Speed | Source |
 |---|---|---|---|
 | RTX 4090 | 128,1024 | 6214 Mkeys/s | community report, original README |
-| RTX 4060 | 512,512 | 1238 Mkeys/s | original author, original README |
+| RTX 4060 | 512,512 | 1238 Mkeys/s | original author's report, original README |
 | RTX 5090 | 128,256 | 8408 Mkeys/s (7 s sample) | original README example |
 
-These numbers are retained for context only. They were produced by
-CUDACyclone builds with unknown compiler/toolkit/driver state and no
-recorded methodology, and must not be used as comparison points for
-optimization claims in this project.
+Retained for context only; produced by CUDACyclone builds with unknown
+toolchain state and no recorded methodology. Not comparison points for
+this project's optimization claims.
 
-## Required fields for the first real baseline
+## Open measurement gaps
 
-Per the Phase-3 spec, the first hardware run must record: GPU model and
-compute capability, driver and CUDA versions, compiler options
-(`make info` output), GPU clock and power conditions (dmon samples),
-kernel execution time, throughput, registers per thread
-(`make ptxas-info`), and — where Nsight Compute is available — achieved
-occupancy, warp stall reasons, memory throughput, and integer pipeline
-utilization.
+- Repeated runs with median + variance (Phase-7 sweep workflow)
+- Power/clock telemetry during runs
+- RTX PRO 6000 driver version
+- Nsight Compute profiling (E1) — occupancy, stall reasons, local-memory
+  traffic, integer pipe utilization
+- Registers-per-thread on the production build (`make ptxas-info` on the
+  target machine)

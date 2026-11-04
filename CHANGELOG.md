@@ -6,7 +6,29 @@ releases exist.
 
 ## [Unreleased]
 
-### Added (pending PRs — see GitHub Issues / Pull Requests)
+### Phase 3 (2026-11-05)
+
+Added
+- `docs/research/STACK_FRAME_INVESTIGATION.md` — full attribution of the
+  16,688 B kernel stack frame (frame = 16·MAX_BATCH_SIZE + 304; `subp[]`
+  ~98%), sm_120 SASS instruction census per function, local-access offset
+  histogram; runtime impact explicitly pending experiments E1–E4.
+- CI kernel-resource-matrix job: stack frames at MAX_BATCH_SIZE
+  128/256/512/1024, SASS/PTX artifacts (90-day retention).
+- `NVCC_EXTRA` Makefile knob for compile-time experiments (E3).
+- README redesign (Phase 3 Workstream B) with SVG assets.
+
+Changed
+- `docs/research/MAXIMUM_PERFORMANCE_ROADMAP.md` — v2: proposal table with
+  confidence/cost/risk/hardware/validation/priority/status per item;
+  Stage A evidence updated (A1/A2 done); O-01 status in-PR.
+
+Removed
+- Verified dead code (audit §6 list; pure-deletion diff, PR #14).
+
+### Phase 2 (2026-11-04) — merged via PRs #7–#12
+
+Added
 - `docs/audits/INITIAL_TECHNICAL_AUDIT.md` — full static audit with
   execution-flow diagram, verified dead-code list, and bottleneck
   hypotheses H1–H9 (no profiler claims).

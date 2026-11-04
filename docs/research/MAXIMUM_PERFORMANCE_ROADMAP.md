@@ -1,152 +1,72 @@
-# Maximum Performance Roadmap — 2^71 project
+# Maximum Performance Roadmap — 2^71 project (v2)
 
-Research-phase document (Phase 5). Every proposal below is an **estimate**
-grounded in the static audit (`docs/audits/INITIAL_TECHNICAL_AUDIT.md`,
-hypotheses H1–H9). Nothing here is a measured result. No proposal may be
-merged without: (1) profiler/benchmark evidence on target hardware, and
-(2) passing the full correctness suite
-(`tests/` + `proof.py`).
+Evidence-gated optimization program for CUDA 13 / Blackwell `sm_120`.
+Revision: 2026-11-05 (Phase 3). Supersedes v1; history is in git.
 
-Legend — Priority: P1 (do first once hardware is available) … P4 (backlog).
-Risk: correctness risk if implemented carelessly.
+**Ground rules (unchanged, binding):**
+1. Every optimization PR passes the full correctness suite (CPU reference
+   tests + GPU suite + `proof.py` where hardware allows) before merge.
+2. Every performance claim is a **measurement** recorded in
+   `docs/benchmarks/PERFORMANCE_HISTORY.md`; estimates live only here,
+   always with a confidence level.
+3. Improvements are compared cumulatively per GPU+driver+CUDA
+   configuration; percentages of unrelated optimizations are never added.
+4. No arbitrary throughput target is promised. The objective is maximum
+   practical performance with correctness preserved.
+
+**New evidence since v1 (compile-time, CI-verified):**
+- `docs/research/STACK_FRAME_INVESTIGATION.md`: kernel stack frame =
+  `16·MAX_BATCH_SIZE + 304` B (subp[] is ~98%); 251 static LDL/STL in the
+  hot kernel SASS; register spill negligible (8/16 B at B≤512) → **H1
+  structurally confirmed, H2 weakened**. Runtime impact: unknown until
+  experiments E1–E4 run on hardware.
+- Hash pipeline uses zero local memory (SASS census) → hash-side
+  restructuring will not relieve local-memory pressure.
 
 ---
 
-## Stage A — Evidence gathering (before any optimization)
+## Stage A — evidence gathering (P0, gates everything)
 
 | ID | Action | Output |
 |---|---|---|
-| A1 | `make ptxas-info` on RTX 5090 build | registers/thread + spill bytes per kernel (H2 evidence) |
-| A2 | Nsight Compute profile of the canonical run | occupancy, warp stall breakdown, local-memory LD/ST volume (H1/H3 evidence) |
-| A3 | `nvdisasm` SASS of `kernel_point_add_and_check_oneinv` for sm_120 | instruction mix, LDL/STL, IMAD/MUL chains |
-| A4 | Baseline records via `benchmarks/baseline/run_baseline.sh` on both GPUs | first rows of `PERFORMANCE_HISTORY.md` |
-| A5 | Grid/slices sweep on both GPUs (config-only, no code change) | per-GPU optimal runtime configuration table |
+| A1 | ✅ done | `make ptxas-info` register reports (CI) |
+| A2 | ✅ done | SASS census + stack-frame matrix (CI run 41906226978) |
+| A3 | ⬜ Nsight Compute profile, canonical run, both GPUs | occupancy, stall reasons, local-memory volume (E1) |
+| A4 | ⬜ First baseline records via `run_baseline.sh`, both GPUs | first measured rows of PERFORMANCE_HISTORY |
+| A5 | ⬜ `--grid/--slices` sweep per GPU (config-only) | per-GPU optimal configuration table |
+| A6 | ⬜ Batch-size sweep B=128/256/512 at fixed work (E2) | frame-vs-throughput correlation |
 
-Stage A costs no code risk and gates everything else.
+## Optimization proposals
 
----
+Legend: Confidence = estimate confidence, not measured benefit.
+Priority: P0 = gating/evidence, P1 = first implementation wave,
+P2 = later, P3 = backlog. Status: pending / in-PR / done / rejected.
 
-## Stage B — Foundational, low-risk candidates
+| Optimization | Current limitation | Expected benefit (confidence) | Cost | Correctness risk | Required hardware | Validation | Priority | Status |
+|---|---|---|---|---|---|---|---|---|
+| **O-01** remove verified dead code | none at runtime (compile/review surface only) | 0% runtime (high conf.) | Low | Low | none | CI compile + CPU tests + pure-deletion diff | P3 | **in PR #14** |
+| **O-05** restructure `subp[]` out of local memory (segment-wise products or two-pass O(1) residency) | 16·B B/thread local frame; 251 static LDL/STL in hot loop; runtime impact unconfirmed | unknown until E1/E2; if local-memory-bound: potentially large (low conf.) | High | High | RTX 5090 + PRO 6000 | E1/E2 decision gate; full suite + proof.py; per-config sweep; benchmark records | P1 *after E1/E2* | pending |
+| **O-06** occupancy / launch-bounds / threadsPerBlock sweep | `__launch_bounds__(256,2)` fixed; spill negligible → headroom may exist (low conf.) | 0–15% (low conf.) | Low per variant | Low | both GPUs | each variant: full suite + benchmark | P1 | pending |
+| **O-02** build-flag A/B: rdc on/off | `-rdc=true` may limit whole-program codegen | 0–5% (low conf.) | Low | Low | one GPU enough | A/B build identical results + benchmark | P1 (cheap) | pending |
+| **O-03** host found-flag polling → zero-copy mapped flag | 10 ms blocking D2H copy per poll (`project_2_71.cu:771-773`) | near-zero–few % (low conf.) | Low-Med | Low | one GPU | A/B benchmark; Ctrl-C path test | P2 | pending |
+| **O-07** hash pipeline instruction efficiency | hash is register-only, zero local mem; EC dominates? unknown (A3) | small if EC-bound (low conf.) | Med-High | Med | both GPUs | A3 SASS + stall data first; CPU hash vectors catch deviations | P2 | pending |
+| **O-09** per-GPU default grid/slices auto-tuning | defaults not per-device; SM count already dynamic | user-facing convenience + best-case perf (med conf.) | Low | none | both GPUs | A5 sweep data → device profile table | P2 | pending |
+| **E3-knob** `NVCC_EXTRA=-DMAX_BATCH_SIZE=512` A/B | compile-time frame cap experiment | measures frame-only effect (med conf. of decision value) | Low | Low | one GPU | identical-results check + benchmark | P1 | knob **in PR (opt/nvcc-extra-knob)** |
+| **O-04** setup-phase batch inversion | one field inversion per affine op (startup only) | startup seconds only (high conf.) | Med | Med | any GPU | setup timing + scalar-mul tests | P4 | pending |
+| **O-08** sm_120 codegen study (32-bit limbs, IMAD chains) | unknown SASS quality vs hand-tuned | unknown (very low conf.) | High | High | both GPUs | A3 evidence first; reference cross-checks per rewrite | P3 | pending |
 
-### O-01 — Remove verified dead code
-- **What:** delete `USE_SYMMETRY` block, `addBigEndian256`, `compare20`,
-  `MatchResult`, `mul64x64_128`, `addWithCarry`, unused device globals
-  (audit §6, exact lines listed there); fix triple declaration of
-  `scalarMulKernelBase`.
-- **Expected benefit:** none claimed (code is never executed) — compile
-  time and review surface only.
-- **Complexity:** trivial. **Risk:** minimal (build + tests confirm).
-- **Validation:** full test suite; diff confirms no live-path change.
-- **Priority:** P3 (hygiene).
-
-### O-02 — Build-flag A/B: relocatable device code (H4)
-- **What:** build variant without `-rdc=true`/`-lcudadevrt` (requires
-  resolving `__noinline__` usage legality first).
-- **Expected benefit (estimate):** 0–5%; whole-program codegen may
-  schedule better and removes module load overhead.
-- **Complexity:** low. **Risk:** low.
-- **Validation:** identical correctness output on known-answer + proof.py;
-  benchmark vs baseline on same GPU.
-- **Priority:** P1 (cheap experiment, immediate signal).
-
-### O-03 — Host-side found-flag polling (H5)
-- **What:** replace the 10 ms blocking `cudaMemcpy` D2H of `found_flag`
-  (`project_2_71.cu:771-773`) with a zero-copy mapped host-visible flag or
-  `cudaEventQuery`-based completion detection.
-- **Expected benefit (estimate):** near-zero to a few % (copy is small);
-  removes potential stream serialization during launches.
-- **Complexity:** low-medium. **Risk:** low (host-side only).
-- **Validation:** benchmark A/B; Ctrl-C interrupt path still tested.
-- **Priority:** P2.
-
-### O-04 — Setup-phase speedup (H7)
-- **What:** batch inversion for the initial `scalarMulKernelBase` phase
-  (affine double-and-add currently does one field inversion per op).
-- **Expected benefit (estimate):** reduces one-time startup latency only
-  (seconds); no steady-state throughput change.
-- **Complexity:** medium. **Risk:** medium (touches point arithmetic).
-- **Validation:** scalar-mul correctness tests + reference cross-check.
-- **Priority:** P4 (startup cost is amortized over long runs).
-
----
-
-## Stage C — Hot-path restructuring (requires A1–A3 evidence)
-
-### O-05 — Local-memory elimination for `subp[]` (H1)
-- **What:** the `(B/2)·32 B` per-thread array `subp`
-  (`project_2_71.cu:140`) lives in local memory. Restructure into
-  segment-wise processing (e.g. segments of 16–32 points computed in
-  registers with per-segment prefix products), or a two-pass
-  forward/backward product scheme that stores only O(1) values per thread.
-- **Expected benefit (estimate):** potentially large if H1 is confirmed by
-  A2/A3 (local LD/ST currently on the critical path of every batch);
-  bounded by the EC+hash arithmetic floor (H3).
-- **Complexity:** high. **Risk:** high — exact same keys must be produced
-  (proof.py mod-B residue coverage is the safety net).
-- **Validation:** proof.py full run + new GPU tests + per-config sweep;
-  benchmark vs baseline.
-- **Priority:** P1 **if** A2/A3 confirm local-memory dominance, else P3.
-
-### O-06 — Occupancy/launch-bounds tuning (H2)
-- **What:** sweep `__launch_bounds__(256, N)` for N ∈ {1,2,3,4} and
-  `threadsPerBlock` ∈ {128, 256, 512} (currently fixed 256
-  `project_2_71.cu:520-522`).
-- **Expected benefit (estimate):** 0–15% depending on A1 register report.
-- **Complexity:** low per experiment. **Risk:** low.
-- **Validation:** each variant through the full suite (grid divisibility
-  must hold — `pick_threads_total` adapts).
-- **Priority:** P1 (after A1).
-
-### O-07 — Hash pipeline instruction efficiency (H3)
-- **What:** investigate (a) merging SHA-256 schedule loads, (b) RIPEMD-160
-  dual-line round pairing, (c) `__noinline__` boundary of
-  `getHash160_33_from_limbs` (H6), on sm_120 SASS.
-- **Expected benefit (estimate):** unknown until A3; if EC stalls dominate,
-  hash work is free ILP and gains are small.
-- **Complexity:** medium-high. **Risk:** medium (hash must remain exact —
-  reference tests catch deviations).
-- **Validation:** CPU reference vectors + GPU hash160 cross-check.
-- **Priority:** P2 (after A3 evidence).
-
----
-
-## Stage D — Architecture-specific research (Blackwell)
-
-### O-08 — sm_120 codegen study
-- **What:** inspect Blackwell SASS for the field-mul PTX carry chains
-  (`CUDAMath.h:5-26`): 64-bit `mad` lowering, IMAD.HI usage, register bank
-  conflicts. Compare 64-bit limb vs 32-bit limb implementations.
-- **Expected benefit (estimate):** unknown; hypothesis only.
-- **Complexity:** high. **Risk:** high (rewrite of core arithmetic).
-- **Priority:** P3 (only after Stages B/C measured).
-
-### O-09 — Per-GPU default tuning
-- **What:** auto-select `--grid/--slices` defaults per device
-  (SM count / VRAM already drive sizing; add a device-profile table from
-  A5 sweep data for 5090 vs PRO 6000).
-- **Complexity:** low. **Risk:** none to correctness.
-- **Priority:** P2 after A5.
-
----
-
-## Rejected / deferred ideas (documented to avoid re-litigating)
+## Rejected / deferred (unchanged)
 
 | Idea | Reason |
 |---|---|
-| Change secp256k1 algorithms / EC formulas | Out of scope by spec (behavior preservation); math changes only via dedicated, fully-validated rewrites |
-| Skip RIPEMD-160 for most candidates | Not sound: hash160 output is the search filter; no cheaper sound prefilter exists |
-| `-use_fast_math` removal | no-op for integer workload (audit §4) — cosmetic only |
-| Persistent kernel + CUDA graphs | launches are already amortized (one per multi-second slice); expected gain negligible |
-
----
+| Change secp256k1 algorithms / EC formulas | out of scope (behavior preservation); only via dedicated fully-validated rewrites |
+| Skip RIPEMD-160 for most candidates | unsound: hash160 is the search filter |
+| `-use_fast_math` removal | no-op for integer workload (audit §4) |
+| Persistent kernel / CUDA graphs | launches amortized over multi-second slices; negligible expected gain |
+| Reducing the stack frame for its own sake | frame size ≠ throughput; local memory is L1-cached; E1/E2 decide (investigation §4) |
 
 ## Process
 
-1. Each optimization = one branch `opt/<id>` + one PR with the 9-section
-   template (objective, current, proposed, files, rationale, correctness
-   results, benchmark comparison, limitations, rollback).
-2. Merged only with Pass correctness + measured, non-regressed benchmark.
-3. Regressions are reverted (rollback section) and recorded as Rejected in
-   `PERFORMANCE_HISTORY.md`.
-4. Never add percentages of unrelated optimizations (per-GPU cumulative
-   baseline only).
+Unchanged from v1: one branch `opt/<id>` per optimization, 9-section PR
+template, merge only with correctness pass + non-regressed measurement,
+regressions recorded as Rejected.

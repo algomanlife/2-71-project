@@ -15,6 +15,51 @@ on:
   workflow_dispatch:
 
 jobs:
+  kernel-resource-matrix:
+    name: Kernel resource matrix (compile-time evidence, no GPU execution)
+    runs-on: ubuntu-latest
+    container:
+      image: nvidia/cuda:13.0.0-devel-ubuntu24.04
+    steps:
+      - name: Install make
+        run: |
+          apt-get update -qq && apt-get install -y -qq make > /dev/null
+      - uses: actions/checkout@v4
+      - name: Stack frame vs MAX_BATCH_SIZE (ptxas -v)
+        run: |
+          for MB in 128 256 512 1024; do
+            echo "=== MAX_BATCH_SIZE=$MB ==="
+            nvcc -O3 -rdc=true -use_fast_math --ptxas-options=-O3 \
+                 -gencode arch=compute_120,code=sm_120 -std=c++17 \
+                 -Xptxas -v -DMAX_BATCH_SIZE=$MB -c project_2_71.cu -o /dev/null 2>&1 \
+                 | grep -E "Compiling entry|stack frame|spill (stores|loads)" || true
+          done
+      - name: SASS + PTX dump and local-memory census
+        run: |
+          make GPU_ARCH=120 SM_ARCHS="120"
+          cuobjdump -sass ./project-2-71 > sass_sm120.txt
+          cuobjdump -ptx  ./project-2-71 > ptx_sm120.txt
+          echo "=== per-function local-memory instruction census (sm_120 SASS) ==="
+          awk '
+            /^Function :/ { fn=$3 }
+            /LDL|STL/ {
+              if (match($0, /LDL/))  ldl[fn]++
+              if (match($0, /STL/))  stl[fn]++
+            }
+            END {
+              for (f in ldl) printf "%s  LDL=%d STL=%d\n", f, ldl[f], stl[f]
+              for (f in stl) if (!(f in ldl)) printf "%s  LDL=0 STL=%d\n", f, stl[f]
+            }' sass_sm120.txt | sort
+          echo "=== total SASS size: $(wc -l < sass_sm120.txt) lines"
+      - name: Upload SASS/PTX evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sm120-sass-ptx
+          path: |
+            sass_sm120.txt
+            ptx_sm120.txt
+          retention-days: 90
+
   build-cuda13:
     name: Build (CUDA 13, sm_120 + legacy, CPU-only runner)
     runs-on: ubuntu-latest

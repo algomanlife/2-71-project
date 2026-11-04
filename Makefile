@@ -38,7 +38,7 @@ all: info $(TARGET)
 info:
 	@echo "=== 2^71 project build ==="
 	@echo "CUDA toolkit  : $(if $(CUDA_MAJOR),$(CUDA_MAJOR).$(CUDA_MINOR),NOT FOUND)"
-	@echo "Detected GPU  : $(if $(GPU_ARCH),compute $(GPU_ARCH),none (set GPU_ARCH= to override)")
+	@echo "Detected GPU  : $(if $(GPU_ARCH),compute $(GPU_ARCH),none - set GPU_ARCH= to override"
 	@echo "Architectures : $(SM_ARCHS_SORTED) (PTX fallback: compute_$(PTX_ARCH))"
 	@echo "nvcc          : $(NVCC_FLAGS) $(CXXFLAGS)"
 

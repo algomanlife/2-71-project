@@ -172,8 +172,10 @@ Private Key   : 00000000000000000000000000000000000000000000000000000022382FACD0
 Public Key    : 03C060E1E3771CBECCB38E119C2414702F3F5181A89652538851D2E3886BDD70C6
 ```
 
-Exit codes: `0` match found; `130` interrupted (Ctrl+C, finishes the
-current slice); non-zero on invalid arguments or CUDA errors.
+Exit codes: `0` match found; `1` exhaustive not-found or invalid
+arguments (invalid arguments print an `Error:` message to stderr); `130`
+interrupted (Ctrl+C, finishes the current slice); `2` CUDA/runtime
+execution error (error name and description printed to stderr).
 
 Common errors: `range length must be a power of two`, `start must be
 aligned to the range length`, `provide either --address or
@@ -273,6 +275,7 @@ validation.
 | [Baseline results](docs/benchmarks/BASELINE_RESULTS.md) | methodology + status (pending) |
 | [Performance history](docs/benchmarks/PERFORMANCE_HISTORY.md) | cumulative measured tracking |
 | [Benchmark harness](benchmarks/baseline/README.md) | how to run + record format |
+| [GPU validation round 1 — fixes](docs/testing/GPU_VALIDATION_ROUND1_FIXES.md) | RTX 5090 session failure analysis & scheduler/error-handling fixes |
 | [Attribution](ATTRIBUTION.md) | provenance & licensing audit |
 
 ## Contributing

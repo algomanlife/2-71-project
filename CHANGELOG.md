@@ -6,6 +6,34 @@ releases exist.
 
 ## [Unreleased]
 
+### GPU validation round 1 fixes (2026-11-05)
+
+Fixed
+- Small-range scheduling: ranges with fewer batches than one full block
+  (e.g. 4096 keys, batch 128) previously aborted with "failed to pick
+  threadsTotal"; a fallback now launches a partially-filled final block
+  with exact whole-batch per-thread work. Large-range scheduling path
+  unchanged.
+- Kernel entry now derives its warp mask from an entry ballot
+  (`__ballot_sync` before any early return), making partial warps
+  well-defined; hash-flush takes a partial-warp-safe branch. Full-warp
+  hot path instruction-identical (one added ballot).
+- CUDA error handling: all host/device allocations, transfers, symbol
+  copies, and synchronizations checked; stream-query/kernel-launch
+  failures reported with CUDA error names and no longer exit 0. Exit
+  codes now distinguish FOUND (0) / NOT_FOUND (1) / INTERRUPTED (130) /
+  ERROR (2).
+- Test harness rewritten: bounded aligned ranges, fixed random seeds,
+  return-code/stdout/stderr/command diagnostics, explicit timeouts,
+  sub-block/full-block/multi-block regression matrix, parity coverage,
+  exhaustive no-match, argument validation (runs GPU-less in CI).
+
+Added
+- `docs/testing/GPU_VALIDATION_ROUND1_FIXES.md` (root causes, changes,
+  CPU validation, remaining hardware validation).
+- CI: solver binary artifact passed to the python-tests job so
+  argument-validation tests execute on CPU-only runners.
+
 ### Phase 3 (2026-11-05)
 
 Added

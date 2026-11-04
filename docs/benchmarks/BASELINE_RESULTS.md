@@ -11,8 +11,8 @@ throughput and not medians of repeated runs.
 |---|---|---|---|---|---|---|
 | b3d13be | RTX 5090 (170 SM) | 13.4 | `512,64` | key found, suite 19/19 | 8,133.0 | [grid-sweep-2026-11-05.json](data/grid-sweep-2026-11-05.json) |
 | b3d13be | RTX PRO 6000 Blackwell (188 SM) | 13.4 | `128,64` | key found (12/12 grids) | 7,452.4 | [grid-sweep-2026-11-05.json](data/grid-sweep-2026-11-05.json) |
-| b3d13be | RTX 5090 | 13.4 | initial baseline | key found | 7,800.4 | same record |
-| b3d13be | RTX PRO 6000 | 13.4 | initial baseline | key found | 7,074.8 | same record |
+| b3d13be | RTX 5090 | 13.4 | initial baseline | key found | 7,800.4 | [grid-sweep-2026-11-05.json](data/grid-sweep-2026-11-05.json) |
+| b3d13be | RTX PRO 6000 | 13.4 | initial baseline | key found | 7,074.8 | [grid-sweep-2026-11-05.json](data/grid-sweep-2026-11-05.json) |
 
 Full 12-configuration grid sweep: [`GRID_RESULTS.md`](GRID_RESULTS.md).
 

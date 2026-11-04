@@ -187,12 +187,17 @@ jobs:
             done
           done
           [ "$broken" -eq 0 ] || exit 1
-      - name: No fabricated benchmark rows in baseline docs
+      - name: Measured benchmark rows must reference existing record files
         run: |
+          # Measured-looking rows (leading commit SHA) are allowed only when
+          # they link a data/...json record that exists in the repository.
           for f in docs/benchmarks/BASELINE_RESULTS.md docs/benchmarks/PERFORMANCE_HISTORY.md; do
             [ -f "$f" ] || continue
-            if grep -qE "^\| [0-9a-f]{7,} \|" "$f"; then
-              echo "ERROR: $f contains measured-looking rows without hardware-run records"
-              exit 1
-            fi
+            grep -E "^\| [0-9a-f]{7,} \|" "$f" | grep -v "](data/" | grep -q . && {
+              echo "ERROR: $f has measured rows without a data/ record link"; exit 1; }
+            for rec in $(grep -oE "\]\(data/[^)]+\.json\)" "$f" | sed 's/^](//; s/)$//'); do
+              dir=$(dirname "$f")
+              [ -f "$dir/$rec" ] || {
+                echo "ERROR: $f references missing record $rec"; exit 1; }
+            done
           done

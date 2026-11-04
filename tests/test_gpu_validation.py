@@ -139,7 +139,7 @@ class TestArgumentValidation(_BinaryTest):
     BAD_CASES = [
         # (range, extra args, expected stderr fragment)
         ("2000000000:2000000FFE", [], "power of two"),            # length 4095
-        ("2000000001:2000000FFF", [], "aligned"),                 # misaligned start
+        ("2000000001:2000000800", [], "aligned"),                 # pow2 length, misaligned start
         ("2000000000:2000000FFF", ["--target-hash160", "00" * 20], "not both"),
         ("2000000000:2000000FFF", ["--grid", "130,8"], "power of two"),  # odd batch
         ("2000000000:2000000FFF", ["--grid", "2048,8"], "1024"),  # batch > MAX

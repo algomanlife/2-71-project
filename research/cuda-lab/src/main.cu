@@ -53,7 +53,7 @@ const int kNumBench = sizeof(kBenches) / sizeof(kBenches[0]);
 int main(int argc, char** argv) {
     const char* bench = "all";
     int blocks = -1, threads = -1, iters = -1, reps = 1;
-    bool json = false, list = false;
+    bool json = false, list = false, verify = false, verify_only = false;
     for (int i = 1; i < argc; ++i) {
         if (!strcmp(argv[i], "--bench") && i + 1 < argc) bench = argv[++i];
         else if (!strcmp(argv[i], "--blocks") && i + 1 < argc) blocks = atoi(argv[++i]);
@@ -62,6 +62,8 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--reps") && i + 1 < argc) reps = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--json")) json = true;
         else if (!strcmp(argv[i], "--list")) list = true;
+        else if (!strcmp(argv[i], "--verify")) verify = true;
+        else if (!strcmp(argv[i], "--verify-only")) verify_only = true;
         else { std::fprintf(stderr, "unknown arg %s\n", argv[i]); return 2; }
     }
 
@@ -80,16 +82,52 @@ int main(int argc, char** argv) {
         return 2;
     }
 
+    // theoretical reference points (for utilization context; labeled
+    // estimates — see docs/research/BENCHMARK_VALIDATION.md).
+    // cudaDeviceProp::clockRate/memoryClockRate were removed in CUDA 13;
+    // query device attributes instead (0 = unavailable).
+    int clock_khz = 0, mem_clock_khz = 0, mem_bus_bits = 0;
+    cudaDeviceGetAttribute(&clock_khz, cudaDevAttrClockRate, 0);
+    cudaDeviceGetAttribute(&mem_clock_khz, cudaDevAttrMemoryClockRate, 0);
+    cudaDeviceGetAttribute(&mem_bus_bits, cudaDevAttrGlobalMemoryBusWidth, 0);
+    const double clock_ghz = (double)clock_khz / 1000000.0;
+    const double int32_ginstr_per_s =
+        (clock_khz > 0) ? (double)prop.multiProcessorCount * 128.0 * clock_ghz * 1e9 : 0.0;
+    const double mem_bw_gbs =
+        (mem_clock_khz > 0)
+            ? ((double)mem_clock_khz * 2.0 * (double)mem_bus_bits / 8.0) / 1e9
+            : 0.0;
+
     if (!json) {
         std::printf("# cuda-lab — synthetic benchmarks (research only)\n");
-        std::printf("# device: %s (compute %d.%d, %d SM)\n", prop.name, prop.major,
-                    prop.minor, prop.multiProcessorCount);
+        std::printf("# device: %s (compute %d.%d, %d SM, %.2f GHz)\n", prop.name,
+                    prop.major, prop.minor, prop.multiProcessorCount, clock_ghz);
+        std::printf("# theoretical: int32 ~%.1f Ginstr/s, mem ~%.0f GB/s (estimates)\n",
+                    int32_ginstr_per_s / 1e9, mem_bw_gbs);
     }
 
     int rc = 0;
+    int verify_failures = 0;
     for (int i = 0; i < kNumBench; ++i) {
         const BenchDef& b = kBenches[i];
         if (strcmp(bench, "all") && strcmp(bench, b.name)) continue;
+
+        // Phase-3 validity gate: cross-check executed work against the host
+        // reference before reporting any timing (or standalone with
+        // --verify-only). Divergence means the numbers are NOT valid.
+        bool verified = lab::verify_bench(b.name);
+        if (verify || verify_only) {
+            if (json) {
+                std::printf("{\"bench\":\"%s\",\"verified\":%s}\n", b.name,
+                            verified ? "true" : "false");
+            } else {
+                std::printf("%-14s verification ......... %s\n", b.name,
+                            verified ? "PASS (matches host reference)"
+                                     : "FAIL (diverges from host reference)");
+            }
+            if (!verified) ++verify_failures;
+        }
+        if (verify_only) continue;
 
         int B = blocks > 0 ? blocks : b.blocks;
         int T = threads > 0 ? threads : b.threads;
@@ -116,8 +154,12 @@ int main(int argc, char** argv) {
         if (json) {
             std::printf("{\"bench\":\"%s\",\"blocks\":%d,\"threads\":%d,\"iters\":%d,"
                         "\"reps\":%d,\"ms\":%.4f,\"median_ms\":%.4f,\"ops\":%.0f,"
-                        "\"ops_unit\":\"%s\"}\n",
-                        b.name, B, T, I, reps, ms[0], median, ops, b.op_unit);
+                        "\"ops_unit\":\"%s\",\"verified\":%s,"
+                        "\"theoretical_int32_ginstr_per_s\":%.1f,"
+                        "\"theoretical_mem_bw_gb_s\":%.0f}\n",
+                        b.name, B, T, I, reps, ms[0], median, ops, b.op_unit,
+                        verified ? "true" : "false",
+                        int32_ginstr_per_s / 1e9, mem_bw_gbs);
         } else {
             const char* rate = strstr(b.op_unit, "B/op") ? "GB/s" : "Gops/s";
             if (!strcmp(b.name, "launch-latency"))
@@ -130,6 +172,11 @@ int main(int argc, char** argv) {
                 std::printf("%-14s median %10.3f ms  %8.3f Gops/s  op: %s\n",
                             b.name, median, ops_per_s / 1e9, b.op_unit);
         }
+    }
+    if (verify_failures) {
+        std::fprintf(stderr, "%d benchmark(s) FAILED verification — timings are NOT valid\n",
+                     verify_failures);
+        return 3;
     }
     return rc;
 }

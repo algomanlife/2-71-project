@@ -50,3 +50,23 @@ constexpr uint64_t EC_EXPECTED[8][4] = {
 };
 
 }  // namespace lab
+
+// host-side copies of the public modmul operands (for host reference
+// computations — __constant__ symbols are device-only)
+namespace hostvecs {
+constexpr uint64_t MODMUL_A[4] = {
+    0x1234567890ABCDEFULL, 0x1234567890ABCDEFULL,
+    0x1234567890ABCDEFULL, 0x1234567890ABCDEFULL };
+constexpr uint64_t MODMUL_B[4] = {
+    0x8899AABBCCDDEEFFULL, 0x0011223344556677ULL,
+    0x78695A4B3C2D1E0FULL, 0xF0E1D2C3B4A59687ULL };
+constexpr uint64_t MODMUL_R1[4] = {
+    0x1DC808DD4D6361E0ULL, 0x6B0546AC1B731775ULL,
+    0x024120749FE18FD3ULL, 0xEB39278AC5138807ULL };
+constexpr uint64_t MODMUL_R8[4] = {
+    0x6F6F12CBE5227724ULL, 0x6B6586B23FFF236CULL,
+    0x8200181099B16BCAULL, 0xB3D9C9B13B8F0296ULL };
+constexpr uint64_t MODMUL_R64[4] = {
+    0x5C54DEEF9FD3E1DCULL, 0x774A1A9F0B404744ULL,
+    0xD4C73096C5431D44ULL, 0x8688BB19B68A9337ULL };
+}  // namespace hostvecs

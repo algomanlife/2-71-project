@@ -32,13 +32,15 @@ def parse_run_log(path):
     name = os.path.basename(path)
     m = re.match(r"run_(.+)_(\d+)\.log", name)
     grid, run_no = (m.group(1), int(m.group(2))) if m else (None, None)
-    text = open(path, errors="replace").read()
+    with open(path, errors="replace") as f:
+        text = f.read()
     speeds = [float(x) for x in SPEED_RE.findall(text)]
     found = bool(PRIV_RE.search(text))
     exit_code = None
     code_file = path + ".exit"
     if os.path.exists(code_file):
-        exit_code = int(open(code_file).read().strip() or "-1")
+        with open(code_file) as f:
+            exit_code = int(f.read().strip() or "-1")
     valid = (exit_code == 0) and bool(speeds) and found
     return {
         "run": run_no,
@@ -127,13 +129,14 @@ def main():
 
     pwr = []
     if args.power_log and os.path.exists(args.power_log):
-        for line in open(args.power_log, errors="replace"):
-            parts = line.split()
-            if len(parts) >= 4 and parts[0].lstrip("-").isdigit():
-                try:
-                    pwr.append(float(parts[2]))
-                except ValueError:
-                    pass
+        with open(args.power_log, errors="replace") as f:
+            for line in f:
+                parts = line.split()
+                if len(parts) >= 4 and parts[0].lstrip("-").isdigit():
+                    try:
+                        pwr.append(float(parts[2]))
+                    except ValueError:
+                        pass
 
     record = {
         "utc": os.path.basename(args.out).removesuffix(".json"),
@@ -160,7 +163,8 @@ def main():
         print("SCHEMA ERRORS:", *errors, sep="\n  ", file=sys.stderr)
         sys.exit(2)
 
-    json.dump(record, open(args.out, "w"), indent=2)
+    with open(args.out, "w") as f:
+        json.dump(record, f, indent=2)
     print(f"record written: {args.out}")
 
     failed = [g for g, d in grids.items() if d["any_run_failed"]]

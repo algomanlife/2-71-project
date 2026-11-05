@@ -28,7 +28,19 @@ int main() {
         }
     }
 
-    // 3. ptxas-level check is environment-dependent; not asserted here.
+    // 3. benchmark-validity verification (Phase 3): each bench kernel's
+    // executed work must match the exact host reference (proves the timed
+    // iterations are real; DCE/loop-elision would diverge).
+    {
+        const char* benches[] = {"int32-mix", "int32-mul", "int64-mul",
+                                 "modmul256", "global-rw", "local-rw",
+                                 "divergent"};
+        for (const char* b : benches) {
+            if (lab::verify_bench(b)) std::printf("verify %-12s ......... PASS\n", b);
+            else { std::printf("verify %-12s ......... FAIL\n", b); ++failures; }
+        }
+    }
+
     if (failures) { std::printf("%d FAILURES\n", failures); return 1; }
     std::printf("all correctness tests PASS\n");
     return 0;

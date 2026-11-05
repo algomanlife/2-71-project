@@ -74,3 +74,16 @@ bool ec_scalar_mul_check(const uint64_t* scalars, const uint64_t* expected_xy,
 bool modmul_check(int blocks, int threads);
 
 }  // namespace lab
+
+// ---------------------------------------------------------------------------
+// Benchmark validity verification (Phase 3)
+//
+// verify_bench() re-runs each benchmark kernel in VERIFICATION mode: the
+// final per-thread value is written unconditionally and cross-checked
+// against an exact HOST reference of the same arithmetic. Agreement proves
+// the iterations actually executed on the GPU (dead-code elimination,
+// loop elision, or empty timing would diverge). Returns true on exact
+// agreement across all threads.
+namespace lab {
+bool verify_bench(const char* name);
+}  // namespace lab

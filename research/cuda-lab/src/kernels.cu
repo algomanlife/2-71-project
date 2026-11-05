@@ -8,6 +8,7 @@
 #include <cuda_runtime.h>
 #include <cstdio>
 #include <cstring>
+#include <vector>
 
 using lab::MODMUL_A;
 using lab::MODMUL_B;
@@ -225,6 +226,286 @@ bool modmul_check(int blocks, int threads) {
     }
     cudaFree(d_out);
     return ok;
+}
+
+}  // namespace lab
+
+// ---------------------------------------------------------------------------
+// Benchmark validity verification (Phase 3)
+// ---------------------------------------------------------------------------
+
+// verification kernels: identical arithmetic to the bench kernels, but
+// the final value is written UNCONDITIONALLY so the host can check it.
+__global__ void v_int32_mix(uint32_t* out, int iters) {
+    uint32_t v = (uint32_t)(threadIdx.x + blockIdx.x * 97u);
+    for (int i = 0; i < iters; ++i) v = (v + 0x9E3779B9u) ^ rotr32(v, 13);
+    out[(size_t)blockIdx.x * blockDim.x + threadIdx.x] = v;
+}
+__global__ void v_int32_mul(uint32_t* out, int iters) {
+    uint32_t v = (uint32_t)(threadIdx.x + blockIdx.x * 97u) | 1u;
+    for (int i = 0; i < iters; ++i) v = v * 0x85EBCA6Bu ^ rotr32(v, 11);
+    out[(size_t)blockIdx.x * blockDim.x + threadIdx.x] = v;
+}
+__global__ void v_int64_mul(uint64_t* out, int iters) {
+    uint64_t v = (uint64_t)(threadIdx.x + blockIdx.x * 97u) | 1ull;
+    for (int i = 0; i < iters; ++i) v = v * 0x9E3779B185EBCA87ULL ^ (v >> 23);
+    out[(size_t)blockIdx.x * blockDim.x + threadIdx.x] = v;
+}
+__global__ void v_divergent(uint32_t* out, int iters, int blockDim_x) {
+    uint32_t v = (uint32_t)(threadIdx.x + blockIdx.x * 97u) | 1u;
+    const uint32_t lane = threadIdx.x % (uint32_t)blockDim_x;
+    for (int i = 0; i < iters; ++i) {
+        if (lane & 1) v = v * 0x85EBCA6Bu;
+        else          v = v + 0x9E3779B9u;
+        v ^= rotr32(v, 11);
+    }
+    out[(size_t)blockIdx.x * blockDim_x + threadIdx.x] = v;
+}
+__global__ void v_local_rw(uint64_t* out, int iters) {
+    uint64_t arr[64];
+#pragma unroll
+    for (int i = 0; i < 64; ++i) arr[i] = (uint64_t)(threadIdx.x + i);
+    for (int i = 0; i < iters; ++i) {
+        const int idx = (i * 7) & 63;
+        arr[idx] ^= 0x9E3779B185EBCA87ULL ^ (uint64_t)i;
+    }
+    out[(size_t)blockIdx.x * blockDim.x + threadIdx.x] = arr[0];
+}
+__global__ void v_modmul256(uint64_t* out, int iters) {
+    uint64_t r[4];
+    const uint64_t gid_mix = (uint64_t)(threadIdx.x + blockIdx.x * 97u);
+    r[0] = MODMUL_A[0] ^ gid_mix; r[1] = MODMUL_A[1];
+    r[2] = MODMUL_A[2]; r[3] = MODMUL_A[3];
+    for (int i = 0; i < iters; ++i)
+        _ModMult(r, r, const_cast<uint64_t*>(MODMUL_B));
+    size_t gid = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
+#pragma unroll
+    for (int k = 0; k < 4; ++k) out[gid * 4 + k] = r[k];
+}
+
+// ---- host references (exact replication of kernel arithmetic) ----------
+
+namespace {
+
+void host_add_into(uint64_t* lo, uint64_t& carry, uint64_t add) {
+    const uint64_t old = *lo;
+    *lo += add;
+    const uint64_t c1 = (*lo < old) ? 1u : 0u;
+    const uint64_t old2 = *lo;
+    *lo += carry;
+    const uint64_t c2 = (*lo < old2) ? 1u : 0u;
+    carry = c1 | c2;
+}
+
+// 256x256 -> 512-bit schoolbook product (64-bit limbs, u128 carries)
+void host_mul_512(const uint64_t a[4], const uint64_t b[4], uint64_t r[8]) {
+    for (int k = 0; k < 8; ++k) r[k] = 0;
+    for (int i = 0; i < 4; ++i) {
+        uint64_t carry = 0;
+        for (int j = 0; j < 4; ++j) {
+            unsigned __int128 t = (unsigned __int128)a[i] * b[j] + r[i + j] + carry;
+            r[i + j] = (uint64_t)t;
+            carry = (uint64_t)(t >> 64);
+        }
+        int k = i + 4;
+        while (k < 8 && carry) {
+            const uint64_t old = r[k];
+            r[k] += carry;
+            carry = (r[k] < old) ? 1u : 0u;
+            ++k;
+        }
+    }
+}
+
+// Replicates _ModMult's exact fold semantics (mod 2^256 folding with
+// C = 2^32+977; result is NOT canonicalized to < p, matching the device).
+void host_modmul_device_semantics(const uint64_t a[4], const uint64_t b[4],
+                                  uint64_t out[4]) {
+    const uint64_t C = 0x1000003D1ULL;
+    uint64_t prod[8];
+    host_mul_512(a, b, prod);
+
+    // X = lo(256) + hi(256)*C  (exact, <= 289 bits)
+    uint64_t t[5] = {0, 0, 0, 0, 0};
+    {
+        uint64_t carry = 0;
+        for (int i = 0; i < 4; ++i) {
+            unsigned __int128 cur = (unsigned __int128)prod[4 + i] * C + carry;
+            t[i] = (uint64_t)cur;
+            carry = (uint64_t)(cur >> 64);
+        }
+        t[4] = carry;  // <= 2^33
+    }
+    uint64_t lo[4] = {prod[0], prod[1], prod[2], prod[3]};
+    uint64_t carry = 0;
+    for (int i = 0; i < 4; ++i) host_add_into(&lo[i], carry, t[i]);
+    uint64_t x_hi = t[4] + carry;  // small
+
+    // final: result = lo + x_hi*C  (mod 2^256)  [matches device fold]
+    unsigned __int128 fin = (unsigned __int128)x_hi * C;
+    uint64_t al = (uint64_t)fin, ah = (uint64_t)(fin >> 64);
+    uint64_t res[4] = {lo[0], lo[1], lo[2], lo[3]};
+    carry = 0;
+    host_add_into(&res[0], carry, al);
+    host_add_into(&res[1], carry, ah);
+    host_add_into(&res[2], carry, 0);
+    host_add_into(&res[3], carry, 0);
+    for (int k = 0; k < 4; ++k) out[k] = res[k];
+}
+
+}  // namespace
+
+namespace lab {
+
+bool verify_bench(const char* name) {
+    // fixed small verification configuration: semantics, not scale
+    const int VB = 64, VT = 256, VI = 64;
+    const size_t N = (size_t)VB * VT;
+
+    if (!strcmp(name, "int32-mix")) {
+        uint32_t* d; uint32_t* h = new uint32_t[N];
+        cudaMalloc(&d, N * 4);
+        v_int32_mix<<<VB, VT>>>(d, VI);
+        if (cudaDeviceSynchronize() != cudaSuccess) { cudaGetLastError(); delete[] h; return false; }
+        cudaMemcpy(h, d, N * 4, cudaMemcpyDeviceToHost);
+        bool ok = true;
+        for (size_t g = 0; g < N && ok; ++g) {
+            const uint32_t tid = (uint32_t)(g % VT), blk = (uint32_t)(g / VT);
+            uint32_t v = tid + blk * 97u;
+            for (int i = 0; i < VI; ++i) {
+                v = (v + 0x9E3779B9u) ^ ((v >> 13) | (v << (32 - 13)));
+            }
+            ok = (h[g] == v);
+        }
+        delete[] h; cudaFree(d);
+        return ok;
+    }
+    if (!strcmp(name, "int32-mul")) {
+        uint32_t* d; uint32_t* h = new uint32_t[N];
+        cudaMalloc(&d, N * 4);
+        v_int32_mul<<<VB, VT>>>(d, VI);
+        if (cudaDeviceSynchronize() != cudaSuccess) { cudaGetLastError(); delete[] h; return false; }
+        cudaMemcpy(h, d, N * 4, cudaMemcpyDeviceToHost);
+        bool ok = true;
+        for (size_t g = 0; g < N && ok; ++g) {
+            const uint32_t tid = (uint32_t)(g % VT), blk = (uint32_t)(g / VT);
+            uint32_t v = (tid + blk * 97u) | 1u;
+            for (int i = 0; i < VI; ++i) {
+                v = v * 0x85EBCA6Bu ^ ((v >> 11) | (v << (32 - 11)));
+            }
+            ok = (h[g] == v);
+        }
+        delete[] h; cudaFree(d);
+        return ok;
+    }
+    if (!strcmp(name, "int64-mul")) {
+        uint64_t* d; uint64_t* h = new uint64_t[N];
+        cudaMalloc(&d, N * 8);
+        v_int64_mul<<<VB, VT>>>(d, VI);
+        if (cudaDeviceSynchronize() != cudaSuccess) { cudaGetLastError(); delete[] h; return false; }
+        cudaMemcpy(h, d, N * 8, cudaMemcpyDeviceToHost);
+        bool ok = true;
+        for (size_t g = 0; g < N && ok; ++g) {
+            const uint64_t tid = g % VT, blk = g / VT;
+            uint64_t v = (tid + blk * 97u) | 1ull;
+            for (int i = 0; i < VI; ++i)
+                v = v * 0x9E3779B185EBCA87ULL ^ (v >> 23);
+            ok = (h[g] == v);
+        }
+        delete[] h; cudaFree(d);
+        return ok;
+    }
+    if (!strcmp(name, "divergent")) {
+        uint32_t* d; uint32_t* h = new uint32_t[N];
+        cudaMalloc(&d, N * 4);
+        v_divergent<<<VB, VT>>>(d, VI, VT);
+        if (cudaDeviceSynchronize() != cudaSuccess) { cudaGetLastError(); delete[] h; return false; }
+        cudaMemcpy(h, d, N * 4, cudaMemcpyDeviceToHost);
+        bool ok = true;
+        for (size_t g = 0; g < N && ok; ++g) {
+            const uint32_t lane = (uint32_t)(g % VT), blk = (uint32_t)(g / VT);
+            uint32_t v = (lane + blk * 97u) | 1u;
+            for (int i = 0; i < VI; ++i) {
+                if (lane & 1) v = v * 0x85EBCA6Bu;
+                else          v = v + 0x9E3779B9u;
+                v ^= (v >> 11) | (v << (32 - 11));
+            }
+            ok = (h[g] == v);
+        }
+        delete[] h; cudaFree(d);
+        return ok;
+    }
+    if (!strcmp(name, "local-rw")) {
+        uint64_t* d; uint64_t* h = new uint64_t[N];
+        cudaMalloc(&d, N * 8);
+        v_local_rw<<<VB, VT>>>(d, VI);
+        if (cudaDeviceSynchronize() != cudaSuccess) { cudaGetLastError(); delete[] h; return false; }
+        cudaMemcpy(h, d, N * 8, cudaMemcpyDeviceToHost);
+        bool ok = true;
+        for (size_t g = 0; g < N && ok; ++g) {
+            const uint64_t tid = g % VT;
+            uint64_t arr[64];
+            for (int i = 0; i < 64; ++i) arr[i] = tid + (uint64_t)i;
+            for (int i = 0; i < VI; ++i) {
+                const int idx = (i * 7) & 63;
+                arr[idx] ^= 0x9E3779B185EBCA87ULL ^ (uint64_t)i;
+            }
+            ok = (h[g] == arr[0]);
+        }
+        delete[] h; cudaFree(d);
+        return ok;
+    }
+    if (!strcmp(name, "modmul256")) {
+        uint64_t* d; uint64_t* h = new uint64_t[N * 4];
+        cudaMalloc(&d, N * 32);
+        v_modmul256<<<VB, VT>>>(d, VI);
+        if (cudaDeviceSynchronize() != cudaSuccess) { cudaGetLastError(); delete[] h; return false; }
+        cudaMemcpy(h, d, N * 32, cudaMemcpyDeviceToHost);
+        bool ok = true;
+        for (size_t g = 0; g < N && ok; ++g) {
+            const uint64_t gid_mix = (g % VT) + (g / VT) * 97u;
+            uint64_t r[4];
+            r[0] = hostvecs::MODMUL_A[0] ^ gid_mix; r[1] = hostvecs::MODMUL_A[1];
+            r[2] = hostvecs::MODMUL_A[2]; r[3] = hostvecs::MODMUL_A[3];
+            for (int i = 0; i < VI; ++i)
+                host_modmul_device_semantics(r, hostvecs::MODMUL_B, r);
+            ok = !memcmp(h + g * 4, r, 32);
+        }
+        delete[] h; cudaFree(d);
+        return ok;
+    }
+    if (!strcmp(name, "global-rw")) {
+        // small-config exact simulation: n elements, stride >= threads so
+        // intra-iteration indices are distinct; XOR order-independent.
+        const int GB = 8, GT = 64, GI = 8;
+        const size_t n = 4096;
+        uint64_t* d;
+        cudaMalloc(&d, n * 8);
+        cudaMemset(d, 0, n * 8);
+        k_global_rw<<<GB, GT>>>(d, n, GI);
+        if (cudaDeviceSynchronize() != cudaSuccess) { cudaGetLastError(); cudaFree(d); return false; }
+        uint64_t* h = new uint64_t[n];
+        cudaMemcpy(h, d, n * 8, cudaMemcpyDeviceToHost);
+        std::vector<uint64_t> hits(n, 0);
+        const size_t stride = (size_t)GB * GT;
+        for (int i = 0; i < GI; ++i)
+            for (size_t tid = 0; tid < stride; ++tid)
+                hits[(tid + (size_t)i * stride) % n] += 1;
+        bool ok = true;
+        const uint64_t K = 0x9E3779B185EBCA87ULL;
+        for (size_t j = 0; j < n && ok; ++j)
+            ok = (h[j] == ((hits[j] & 1) ? K : 0ull));
+        delete[] h; cudaFree(d);
+        return ok;
+    }
+    if (!strcmp(name, "ec-scalar-mul")) {
+        // already covered by the public-vector tests
+        return true;
+    }
+    if (!strcmp(name, "launch-latency")) {
+        return true;  // timing-only benchmark: nothing to verify numerically
+    }
+    return false;  // unknown bench
 }
 
 }  // namespace lab

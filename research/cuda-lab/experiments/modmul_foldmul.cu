@@ -32,6 +32,12 @@
 #include <cstring>
 #include <vector>
 
+using lab::MODMUL_A;
+using lab::MODMUL_B;
+using lab::MODMUL_R1;
+using lab::MODMUL_R8;
+using lab::MODMUL_R64;
+
 // ---------------------------------------------------------------------------
 // foldmul arithmetic: hi * C via plain multiplies (the isolated change)
 // ---------------------------------------------------------------------------

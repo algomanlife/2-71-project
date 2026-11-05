@@ -43,6 +43,17 @@ metric is **synthetic-workload throughput only** — it is never Bitcoin
 key-search throughput and never elliptic-curve-operations-per-second of
 the search pipeline (different workloads, never mixed in reports).
 
+## Validity verification (Phase 3)
+
+`--verify` / `--verify-only`: every benchmark kernel is re-run with its
+final per-thread value written unconditionally and cross-checked against
+an exact **host reference** of the same arithmetic — bit-for-bit, all
+verification threads. Agreement proves the timed iterations actually
+executed (DCE / loop elision / empty timing would diverge). The
+experiment runner refuses to time any bench that fails verification, and
+every record carries `verified: true/false`. Audit of the first reported
+measurements: `docs/research/BENCHMARK_VALIDATION.md`.
+
 ## Correctness
 
 `tests/test_vectors.cu` (ctest `public_vectors`): chained modmul vs

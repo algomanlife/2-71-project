@@ -462,16 +462,26 @@ __device__ __forceinline__ void SHA256_33_from_limbs(uint8_t prefix02_03, const 
     const uint64_t v2 = x_be_limbs[2];
     const uint64_t v1 = x_be_limbs[1];
     const uint64_t v0 = x_be_limbs[0];
+    // K-2b slice 2 (engine speed program): message assembly via explicit
+    // __byte_perm (one PRMT-class instruction per word instead of the
+    // 4-extract + 3-or sequence per pack_be4 call). 9 words per hashed
+    // key. Selectors derived from the byte layout: 0x4321 = prefix + top
+    // 3 bytes; 0x0765 = the straddling words; 0x0465 = v0.b0 + 0x80 pad.
+    // Verified bit-for-bit against the host oracle (limbs path).
+    const uint32_t v3h = (uint32_t)(v3 >> 32), v3l = (uint32_t)v3;
+    const uint32_t v2h = (uint32_t)(v2 >> 32), v2l = (uint32_t)v2;
+    const uint32_t v1h = (uint32_t)(v1 >> 32), v1l = (uint32_t)v1;
+    const uint32_t v0h = (uint32_t)(v0 >> 32), v0l = (uint32_t)v0;
     uint32_t M[16];
-    M[0] = pack_be4(prefix02_03, (uint8_t)(v3>>56), (uint8_t)(v3>>48), (uint8_t)(v3>>40));
-    M[1] = pack_be4((uint8_t)(v3>>32), (uint8_t)(v3>>24), (uint8_t)(v3>>16), (uint8_t)(v3>>8));
-    M[2] = pack_be4((uint8_t)(v3>>0), (uint8_t)(v2>>56), (uint8_t)(v2>>48), (uint8_t)(v2>>40));
-    M[3] = pack_be4((uint8_t)(v2>>32), (uint8_t)(v2>>24), (uint8_t)(v2>>16), (uint8_t)(v2>>8));
-    M[4] = pack_be4((uint8_t)(v2>>0), (uint8_t)(v1>>56), (uint8_t)(v1>>48), (uint8_t)(v1>>40));
-    M[5] = pack_be4((uint8_t)(v1>>32), (uint8_t)(v1>>24), (uint8_t)(v1>>16), (uint8_t)(v1>>8));
-    M[6] = pack_be4((uint8_t)(v1>>0), (uint8_t)(v0>>56), (uint8_t)(v0>>48), (uint8_t)(v0>>40));
-    M[7] = pack_be4((uint8_t)(v0>>32), (uint8_t)(v0>>24), (uint8_t)(v0>>16), (uint8_t)(v0>>8));
-    M[8] = pack_be4((uint8_t)(v0>>0), 0x80u, 0x00u, 0x00u);
+    M[0] = __byte_perm(v3h, (uint32_t)prefix02_03, 0x4321);
+    M[1] = __byte_perm(v3h, v3l, 0x0765);
+    M[2] = __byte_perm(v3l, v2h, 0x0765);
+    M[3] = __byte_perm(v2h, v2l, 0x0765);
+    M[4] = __byte_perm(v2l, v1h, 0x0765);
+    M[5] = __byte_perm(v1h, v1l, 0x0765);
+    M[6] = __byte_perm(v1l, v0h, 0x0765);
+    M[7] = __byte_perm(v0h, v0l, 0x0765);
+    M[8] = __byte_perm(v0l, 0x00000080u, 0x0465);
 #pragma unroll
     for(int i=9;i<16;++i) M[i]=0;
     M[15] = 33u*8u;

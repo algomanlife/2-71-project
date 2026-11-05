@@ -6,6 +6,24 @@ releases exist.
 
 ## [Unreleased]
 
+### CUDA research lab & Phase-2 research docs (2026-11-05)
+
+Added
+- `research/cuda-lab/` — standalone synthetic benchmark laboratory
+  (CMake, sm_120): 9 workloads with precise op definitions (integer
+  mix/mul, 256-bit modmul with verbatim-extracted project arithmetic,
+  global read/write, local-memory access, warp divergence, affine EC
+  scalar-mul on public scalars, launch latency); public-vector
+  correctness tests; automated experiment runner with medians/variance,
+  JSON/CSV/Markdown records, baseline comparison with noise guard.
+- Research docs: `docs/research/BLACKWELL_PERFORMANCE.md` (doc-fact vs
+  measured vs hypothesis, cited), `SECP256K1_COMPARISON.md`
+  (UltrafastSecp256k1 = MIT, evaluation-only), `BLACKWELL_BOTTLENECKS.md`
+  (evidence table; counter profiling blocked by ERR_NVGPUCTRPERM),
+  `PERFORMANCE_EXPERIMENTS.md` (EXP-L series),
+  `OPTIMIZATION_RESULTS.md` (measured-only, currently empty).
+- CI compiles the lab for sm_120.
+
 ### Benchmark publication & performance program (2026-11-05)
 
 Added

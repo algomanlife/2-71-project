@@ -1,3 +1,6 @@
+# Python virtual environment (scripts/setup.sh)
+.venv/
+
 # Build artifacts
 project-2-71
 *.o

@@ -6,6 +6,17 @@ releases exist.
 
 ## [Unreleased]
 
+### Docs: honest sustained-speed status + address-paste troubleshooting (2026-11-05)
+
+- README: sustained speed is **not stable on this rig** — 8.5-9
+  Gkeys/s observed on real runs (cloud-GPU clock behavior, no clock
+  lock); sweep best-observed medians (~9.6) remain a separate metric
+  class. Cumulative sustained vs historical: ~+23%. Post-revert
+  T152812Z median 9,627.6 confirms K-2a performance restored.
+- README usage + TROUBLESHOOTING: `Error: invalid P2PKH address` =
+  terminal paste corruption of the address string (verify 34 chars;
+  extract from grid_sweep.sh).
+
 ### K-2a ACCEPTED: +7.4% measured — first kernel-level optimization (2026-11-05)
 
 - Rig verdict (record `sweep-20261105T133135Z.json`, self-proving via

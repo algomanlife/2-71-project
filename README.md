@@ -149,15 +149,18 @@ known-answer runs, medians of 5 reps):
 | Initial baseline (best observed) | 7,800.4 Mkeys/s | 7,074.8 Mkeys/s |
 | 12/12 grids found reference key | ✅ | ✅ |
 
-**Real search run** (manual rig invocation, 2026-11-05, post-#40 engine,
-`--grid 512,64`, second historical test vector
-`8000000000:ffffffffff`): **8,534.1 Mkeys/s sustained** — average over
-the full 22.0 s run, 193.9 G keys hashed, reference key found. The same
-test vector in the original historical log (default config) ran at
-7,128.4 Mkeys/s → **+19.8%** from launch-geometry + code changes.
-Sustained full-run averages sit ~5–6% below the sweep's best-observed
-peaks; both metrics are reported, never mixed
+**Real search runs** (manual rig invocation, `--grid 512,64`, full-run
+averages, reference key found): the **sustained speed is not stable on
+this rig** — observed between **8.5 and 9 Gkeys/s** (8,534.1 pre-K-2a
+and 8,767.1 post-K-2a on the second historical vector,
+[log](docs/benchmarks/data/execution-log-2026-11-05d.txt); the third
+vector fluctuates in the same band). Root cause: cloud-GPU clock
+behavior in longer runs (no clock lock available) — the sweep's
+short-run best-observed medians (~9.6) are a separate metric class,
+always reported separately and never mixed
 ([PERFORMANCE_HISTORY](docs/benchmarks/PERFORMANCE_HISTORY.md)).
+Cumulative sustained vs the historical default-config log (7,128.4):
+**~+23%**; accept/reject decisions use same-day sweep medians only.
 
 **First kernel-level optimization accepted (K-2a, 2026-11-05):** SHA-256
 round constants folded into instruction immediates + single-instruction
@@ -221,6 +224,14 @@ These are strong evidence for the tested configurations — not "547
 independent proofs of complete correctness". The 528-test proof run is
 evidenced on RTX 5090 only. Details and scope rules:
 [VALIDATION.md](docs/testing/VALIDATION.md).
+
+**Address gotcha (rig terminals):** `Error: invalid P2PKH address`
+means the pasted/typed string is not byte-identical to the address
+(invisible characters, or `l`/`1` and `O`/`0` confusion) — the engine
+itself is fine (sweep runs with the same address succeed). Verify with
+`echo -n '<address>' | wc -c` (must print 34), or extract a known-good
+address:
+`--address "$(grep -oP 'ADDRESS="\K[^"]+' benchmarks/sweep/grid_sweep.sh | tr -d '[:space:]')"`.
 
 ```bash
 python3 -m unittest discover -s tests -v          # CPU suite runs anywhere

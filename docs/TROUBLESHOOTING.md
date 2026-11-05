@@ -53,3 +53,12 @@ divides the length.
   `docs/research/BENCHMARK_VALIDATION.md`.
 - `proof.py` failures list the exact category and key in
   `project_2_71_tests_results.txt`.
+
+
+## `Error: invalid P2PKH address` when the address is correct
+
+The string reaching the binary is not byte-identical to the address —
+terminal paste corruption (invisible/zero-width characters, `l` vs `1`,
+`O` vs `0`). The engine is fine (sweep runs with the same address
+succeed). Diagnose: `echo -n '<address>' | wc -c` must print 34; fix:
+`--address "$(grep -oP 'ADDRESS="\K[^"]+' benchmarks/sweep/grid_sweep.sh | tr -d '[:space:]')"`.

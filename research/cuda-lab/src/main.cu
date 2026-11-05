@@ -43,7 +43,7 @@ const BenchDef kBenches[] = {
     {"global-rw",   1024, 256, 2000,  1ull<<28, "1 coalesced 64-bit load + 64-bit store (16 B/op)", true},
     {"local-rw",    1024, 256, 20000, 0,       "1 local-mem 64-bit load + 64-bit store (512 B/thread array)", true},
     {"divergent",   1024, 256, 20000, 0,       "1 divergent-branch iteration (odd: mul, even: add)", true},
-    {"ec-scalar-mul", 64, 256, 1,     0,       "1 full affine scalar multiplication k*G (public scalar)", false},
+    {"ec-scalar-mul", 64, 256, 1,     0,       "1 full affine scalar multiplication k*G (deterministic nonzero scalar)", false},
     {"launch-latency", 1, 32, 10000,  0,       "1 empty kernel launch", false},
 };
 const int kNumBench = sizeof(kBenches) / sizeof(kBenches[0]);

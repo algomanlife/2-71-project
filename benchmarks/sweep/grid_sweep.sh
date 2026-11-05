@@ -54,7 +54,13 @@ COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
 GPU_NAME="$(nvidia-smi --query-gpu=name,compute_cap,driver_version --format=csv,noheader | head -n1)"
 NVCC_VER="$(nvcc --version | sed -n 's/.*release \([0-9.]\+\).*/\1/p' | head -n1)"
 NCU_VER="$(command -v ncu >/dev/null 2>&1 && ncu --version | sed -n 's/.*Version: \([0-9.]\+\).*/\1/p' | head -n1 || echo none)"
-ENV_INFO="make-info: $(make info 2>/dev/null | tr '\n' ' ' | cut -c1-400); ncu: $NCU_VER"
+# Build provenance: .build-flags is written by `make` at link time and
+# records the ACTUAL flags of the binary being swept. `make info` alone
+# cannot do this — it prints current-default flags, so a sweep of an
+# RDC=0 binary used to be indistinguishable from a default build in the
+# record (the 2026-11-05 E-S2 ambiguity).
+BUILD_FLAGS="$(cat .build-flags 2>/dev/null || echo 'MISSING: run make before sweeping')"
+ENV_INFO="build-flags: $BUILD_FLAGS; make-info: $(make info 2>/dev/null | tr '\n' ' ' | cut -c1-400); ncu: $NCU_VER"
 
 # power telemetry at 1 Hz for the whole sweep (retained with the logs)
 nvidia-smi dmon -s pucm -d 1 > "$DMON_LOG" 2>/dev/null &

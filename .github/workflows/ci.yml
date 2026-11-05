@@ -118,6 +118,13 @@ jobs:
         run: make ptxas-info
       - name: Verify executable was produced
         run: test -x ./project-2-71
+      - name: Build CUDA research lab (standalone, sm_120)
+        run: |
+          cmake -S research/cuda-lab -B research/cuda-lab/build \
+                -DCMAKE_CUDA_ARCHITECTURES=120
+          cmake --build research/cuda-lab/build -j2
+          test -x research/cuda-lab/build/cuda-lab-bench
+          test -x research/cuda-lab/build/cuda-lab-tests
       - name: Upload solver binary (for argument-validation tests)
         uses: actions/upload-artifact@v4
         with:

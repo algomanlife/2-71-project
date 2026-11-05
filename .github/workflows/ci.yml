@@ -70,9 +70,11 @@ jobs:
     container:
       image: nvidia/cuda:13.0.0-devel-ubuntu24.04
     steps:
-      - name: Install make (retry-tolerant)
+      - name: Install prerequisites (retry-tolerant)
         run: |
-          command -v make >/dev/null 2>&1 && exit 0
+          # make is often preinstalled in the CUDA image, python3 often is
+          # not — install both unconditionally (the early-exit on 'make'
+          # previously skipped python3 and broke setup.sh).
           for i in 1 2 3; do
             apt-get update -qq && break || { echo "apt update retry $i"; sleep 10; }
           done

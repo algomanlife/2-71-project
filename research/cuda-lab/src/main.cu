@@ -83,12 +83,20 @@ int main(int argc, char** argv) {
     }
 
     // theoretical reference points (for utilization context; labeled
-    // estimates — see docs/research/BENCHMARK_VALIDATION.md)
-    const double clock_ghz = (double)prop.clockRate / 1000000.0;
+    // estimates — see docs/research/BENCHMARK_VALIDATION.md).
+    // cudaDeviceProp::clockRate/memoryClockRate were removed in CUDA 13;
+    // query device attributes instead (0 = unavailable).
+    int clock_khz = 0, mem_clock_khz = 0, mem_bus_bits = 0;
+    cudaDeviceGetAttribute(&clock_khz, cudaDevAttrClockRate, 0);
+    cudaDeviceGetAttribute(&mem_clock_khz, cudaDevAttrMemoryClockRate, 0);
+    cudaDeviceGetAttribute(&mem_bus_bits, cudaDevAttrGlobalMemoryBusWidth, 0);
+    const double clock_ghz = (double)clock_khz / 1000000.0;
     const double int32_ginstr_per_s =
-        (double)prop.multiProcessorCount * 128.0 * clock_ghz * 1e9;
+        (clock_khz > 0) ? (double)prop.multiProcessorCount * 128.0 * clock_ghz * 1e9 : 0.0;
     const double mem_bw_gbs =
-        ((double)prop.memoryClockRate * 2.0 * (double)prop.memoryBusWidth / 8.0) / 1e9;
+        (mem_clock_khz > 0)
+            ? ((double)mem_clock_khz * 2.0 * (double)mem_bus_bits / 8.0) / 1e9
+            : 0.0;
 
     if (!json) {
         std::printf("# cuda-lab — synthetic benchmarks (research only)\n");

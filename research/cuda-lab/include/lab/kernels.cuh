@@ -84,4 +84,6 @@ bool modmul_check(int blocks, int threads);
 // the iterations actually executed on the GPU (dead-code elimination,
 // loop elision, or empty timing would diverge). Returns true on exact
 // agreement across all threads.
+namespace lab {
 bool verify_bench(const char* name);
+}  // namespace lab

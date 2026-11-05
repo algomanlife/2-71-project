@@ -22,3 +22,8 @@ target_include_directories(cuda-lab-tests PRIVATE include)
 
 enable_testing()
 add_test(NAME public_vectors COMMAND cuda-lab-tests)
+
+# isolated experimental variants (baseline benches unchanged; see
+# experiments/modmul_foldmul.cu for the hypothesis and decision rules)
+add_executable(cuda-lab-exp experiments/modmul_foldmul.cu src/kernels.cu)
+target_include_directories(cuda-lab-exp PRIVATE include)

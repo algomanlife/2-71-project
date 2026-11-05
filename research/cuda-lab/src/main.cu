@@ -52,7 +52,7 @@ const int kNumBench = sizeof(kBenches) / sizeof(kBenches[0]);
 
 int main(int argc, char** argv) {
     const char* bench = "all";
-    int blocks = -1, threads = -1, iters = -1, reps = 1;
+    int blocks = -1, threads = -1, iters = -1, reps = 1, warmup = 16;
     bool json = false, list = false, verify = false, verify_only = false;
     for (int i = 1; i < argc; ++i) {
         if (!strcmp(argv[i], "--bench") && i + 1 < argc) bench = argv[++i];
@@ -60,6 +60,7 @@ int main(int argc, char** argv) {
         else if (!strcmp(argv[i], "--threads") && i + 1 < argc) threads = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--iters") && i + 1 < argc) iters = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--reps") && i + 1 < argc) reps = atoi(argv[++i]);
+        else if (!strcmp(argv[i], "--warmup") && i + 1 < argc) warmup = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--json")) json = true;
         else if (!strcmp(argv[i], "--list")) list = true;
         else if (!strcmp(argv[i], "--verify")) verify = true;
@@ -135,7 +136,7 @@ int main(int argc, char** argv) {
 
         std::vector<double> ms;
         for (int r = 0; r < reps; ++r) {
-            double t = lab::run_bench(b.name, B, T, I, b.scratch_bytes);
+            double t = lab::run_warm(b.name, B, T, I, b.scratch_bytes, warmup);
             if (t < 0) { rc = 2; break; }
             ms.push_back(t);
         }

@@ -64,6 +64,12 @@ struct KernelConfig {
 double run_bench(const char* name, int blocks, int threads, int iters,
                  uint64_t scratch_bytes);
 
+// run_bench with a configurable warmup iteration count (default in
+// main.cu is 16 = historical baseline behavior; higher values
+// stabilize clocks/caches for steady-state measurements).
+double run_warm(const char* name, int blocks, int threads, int iters,
+                uint64_t scratch_bytes, int warmup_iters);
+
 // EC scalar-mul correctness helper: compute k·G for k in scalars[N]
 // (4-limb LE each) and return true iff all results match expected[].
 bool ec_scalar_mul_check(const uint64_t* scalars, const uint64_t* expected_xy,

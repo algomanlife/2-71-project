@@ -1,0 +1,51 @@
+Historical execution log — RTX 5090, CUDA 13.4, /workspace/2-71-project
+Recorded 2026-11-05. PRESERVED VERBATIM as historical evidence per the
+benchmark-investigation task; do not edit. Analysis:
+docs/research/TRAVERSAL_ORDER_ANALYSIS.md
+
+=== Test 1 ===
+
+(main) root@C.59221567:/workspace/2-71-project$ ./project-2-71 --range 2000000000:3FFFFFFFFF --address 1HBtApAFA9B2YZw3G2YKSMCtb3dVnjuNe2
+======== 2^71 project =================================
+======== PrePhase: GPU Information ====================
+Device               : NVIDIA GeForce RTX 5090 (compute 12.0)
+SM                   : 170
+ThreadsPerBlock      : 256
+Blocks               : 1024
+Points batch size    : 128
+Batches/SM           : 8
+Batches/launch       : 64 (per thread)
+Memory utilization   : 16.8% (5.28 GB / 31.4 GB)
+-------------------------------------------------------
+Total threads        : 262144
+
+======== Phase-1: BruteForce ==========================
+Time: 17.0 s | Speed: 7485.9 Mkeys/s | Count: 124505373792 | Progress: 90.59 %
+
+======== FOUND MATCH! =================================
+Private Key   : 00000000000000000000000000000000000000000000000000000022382FACD0
+Public Key    : 03C060E1E3771CBECCB38E119C2414702F3F5181A89652538851D2E3886BDD70C6
+Keys hashed   : 131138067872
+(main) root@C.59221567:/workspace/2-71-project$ ./project-2-71 --range 8000000000:ffffffffff --address 1EeAxcprB2PpCnr34VfZdFrkUWuxyiNEFv
+======== 2^71 project =================================
+======== PrePhase: GPU Information ====================
+Device               : NVIDIA GeForce RTX 5090 (compute 12.0)
+SM                   : 170
+ThreadsPerBlock      : 256
+Blocks               : 1024
+Points batch size    : 128
+Batches/SM           : 8
+Batches/launch       : 64 (per thread)
+Memory utilization   : 16.8% (5.28 GB / 31.4 GB)
+-------------------------------------------------------
+
+Total threads        : 262144
+
+======== Phase-1: BruteForce ==========================
+Time: 21.1 s | Speed: 7128.4 Mkeys/s | Count: 151706929760 | Progress: 27.60 %
+
+======== FOUND MATCH! =================================
+Private Key   : 000000000000000000000000000000000000000000000000000000E9AE4933D6
+Public Key    : 03A2EFA402FD5268400C77C20E574BA86409EDEDEE7C4020E4B9F0EDBEE53DE0D4
+Keys hashed   : 158403639136
+(main) root@C.59221567:/workspace/2-71-project$ ./project-2-71 --range 100000000000:1fffffffffff --address 1NtiLNGegHWE3Mp9g2JPkgx6wUg4TW7bbk

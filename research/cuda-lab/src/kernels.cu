@@ -106,8 +106,8 @@ namespace lab {
     std::fprintf(stderr, "CUDA error in %s: %s\n", #x, cudaGetErrorString(e_)); \
     return -1.0; } } while (0)
 
-double run_bench(const char* name, int blocks, int threads, int iters,
-                 uint64_t scratch_bytes) {
+double run_warm(const char* name, int blocks, int threads, int iters,
+                uint64_t scratch_bytes, int warmup_iters) {
     const size_t total_threads = (size_t)blocks * threads;
 
     uint64_t* d_sink = nullptr;
@@ -130,19 +130,21 @@ double run_bench(const char* name, int blocks, int threads, int iters,
     CK(cudaEventCreate(&t0));
     CK(cudaEventCreate(&t1));
 
-    // warmup (excluded from measurement)
-    if (!strcmp(name, "int32-mix"))      k_int32_mix<<<blocks, threads>>>(d_sink, 16);
-    if (!strcmp(name, "int32-mul"))      k_int32_mul<<<blocks, threads>>>(d_sink, 16);
-    if (!strcmp(name, "int64-mul"))      k_int64_mul<<<blocks, threads>>>(d_sink, 16);
-    if (!strcmp(name, "modmul256"))      k_modmul256<<<blocks, threads>>>(d_sink, 16);
-    if (!strcmp(name, "local-rw"))       k_local_rw<<<blocks, threads>>>(d_sink, 16);
-    if (!strcmp(name, "divergent"))      k_divergent<<<blocks, threads>>>(d_sink, 16);
-    if (!strcmp(name, "global-rw"))      k_global_rw<<<blocks, threads>>>(d_sink, scratch_bytes / 8, 16);
+    // warmup (excluded from measurement; iterations configurable via
+    // run_warm for clock/cache stabilization — baseline used 16)
+    const int W = warmup_iters;
+    if (!strcmp(name, "int32-mix"))      k_int32_mix<<<blocks, threads>>>(d_sink, W);
+    if (!strcmp(name, "int32-mul"))      k_int32_mul<<<blocks, threads>>>(d_sink, W);
+    if (!strcmp(name, "int64-mul"))      k_int64_mul<<<blocks, threads>>>(d_sink, W);
+    if (!strcmp(name, "modmul256"))      k_modmul256<<<blocks, threads>>>(d_sink, W);
+    if (!strcmp(name, "local-rw"))       k_local_rw<<<blocks, threads>>>(d_sink, W);
+    if (!strcmp(name, "divergent"))      k_divergent<<<blocks, threads>>>(d_sink, W);
+    if (!strcmp(name, "global-rw"))      k_global_rw<<<blocks, threads>>>(d_sink, scratch_bytes / 8, W);
     if (is_ec) {
         k_ec_scalar_mul<<<blocks, threads>>>(d_ec_s, d_ec_x, d_ec_y, (int)total_threads);
         CK(cudaDeviceSynchronize());
     }
-    if (!strcmp(name, "launch-latency")) { k_empty<<<1, 32>>>(); }
+    if (!strcmp(name, "launch-latency")) { for (int i = 0; i < W; ++i) k_empty<<<1, 32>>>(); }
     CK(cudaGetLastError());
     CK(cudaDeviceSynchronize());
 
@@ -506,6 +508,16 @@ bool verify_bench(const char* name) {
         return true;  // timing-only benchmark: nothing to verify numerically
     }
     return false;  // unknown bench
+}
+
+}  // namespace lab
+
+
+namespace lab {
+
+double run_bench(const char* name, int blocks, int threads, int iters,
+                 uint64_t scratch_bytes) {
+    return run_warm(name, blocks, threads, iters, scratch_bytes, 16);
 }
 
 }  // namespace lab

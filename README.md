@@ -115,13 +115,19 @@ project-2-71 --range <start_hex>:<end_hex> (--address <base58> | --target-hash16
 | `--grid` | `A,B` = points-per-batch × batches-per-SM | A even power of two ≤ 1024, divides range |
 | `--slices` | batches per thread per launch | 1 … 2^20 |
 
-Example (known-answer vector used by all benchmarks):
+Example (structure — substitute your own range and target):
 
 ```bash
-./project-2-71 --range 2000000000:3FFFFFFFFF \
-               --address 1HBtApAFA9B2YZw3G2YKSMCtb3dVnjuNe2 \
-               --grid 512,64
+./project-2-71 --range <start_hex>:<end_hex> \
+               --address <your_target_p2pkh_address> \
+               --grid 512,64 --slices 16
 ```
+
+A ready-to-run correctness example using the repository's public test
+vector lives in the test suite (`tests/test_gpu_validation.py`,
+`TestKnownAnswer`); the benchmark methodology documents the same
+canonical vector. Full CLI reference with every constraint and error
+message: [docs/USAGE.md](docs/USAGE.md).
 
 Exit codes: `0` FOUND · `1` exhaustive NOT_FOUND or invalid arguments
 (`Error:` on stderr) · `130` interrupted (Ctrl+C) · `2` CUDA/runtime
@@ -216,6 +222,12 @@ points by multiplication — the classic batch-inversion trade of
 inversions for multiplications.
 
 ## 12. Performance Engineering
+
+**User & reference documentation:**
+[Usage (CLI reference)](docs/USAGE.md) ·
+[Search workflow](docs/SEARCH_WORKFLOW.md) ·
+[Proof & validation](docs/PROOF_AND_VALIDATION.md) ·
+[Troubleshooting](docs/TROUBLESHOOTING.md)
 
 - [Stack-frame investigation](docs/research/STACK_FRAME_INVESTIGATION.md) —
   the 16.7 KB kernel frame is fully attributed (`subp[]` = 16·B); grid

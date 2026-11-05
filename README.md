@@ -149,12 +149,12 @@ known-answer runs, medians of 5 reps):
 | Initial baseline (best observed) | 7,800.4 Mkeys/s | 7,074.8 Mkeys/s |
 | 12/12 grids found reference key | ✅ | ✅ |
 
-**Real search run** (manual rig invocation, 2026-11-05, post-#40 engine,
-`--grid 512,64`, second historical test vector
-`8000000000:ffffffffff`): **8,534.1 Mkeys/s sustained** — average over
-the full 22.0 s run, 193.9 G keys hashed, reference key found. The same
-test vector in the original historical log (default config) ran at
-7,128.4 Mkeys/s → **+19.8%** from launch-geometry + code changes.
+**Real search runs** (manual rig invocation, `--grid 512,64`, second
+historical test vector `8000000000:ffffffffff`, full 22 s runs,
+reference key found): **8,767.1 Mkeys/s sustained** on the K-2a build
+([log](docs/benchmarks/data/execution-log-2026-11-05d.txt)) vs 8,534.1
+pre-K-2a (+2.7% sustained) and 7,128.4 in the original historical log
+(default config) — **+23.1%** from launch-geometry + code changes.
 Sustained full-run averages sit ~5–6% below the sweep's best-observed
 peaks; both metrics are reported, never mixed
 ([PERFORMANCE_HISTORY](docs/benchmarks/PERFORMANCE_HISTORY.md)).

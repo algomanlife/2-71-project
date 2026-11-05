@@ -1,0 +1,26 @@
+# Real search run — K-2a build (commit 886548d), manual rig invocation,
+# 2026-11-05 (post-#44). Preserved verbatim from the maintainer's terminal.
+# Test vector = second vector of the historical baseline log (same as
+# execution-log-2026-11-05c.txt), now on the K-2a build with --grid 512,64.
+
+(main) root@C.59221567:/workspace/2-71-project$ ./project-2-71 --range 8000000000:ffffffffff --address 1EeAxcprB2PpCnr34VfZdFrkUWuxyiNEFv --grid 512,64
+======== 2^71 project =================================
+======== PrePhase: GPU Information ====================
+Device               : NVIDIA GeForce RTX 5090 (compute 12.0)
+SM                   : 170
+ThreadsPerBlock      : 256
+Blocks               : 8192
+Points batch size    : 512
+Batches/SM           : 64
+Batches/launch       : 64 (per thread)
+Memory utilization   : 17.8% (5.60 GB / 31.4 GB)
+-------------------------------------------------------
+Total threads        : 2097152
+
+======== Phase-1: BruteForce ==========================
+Time: 22.1 s | Speed: 8767.1 Mkeys/s | Count: 189551453888 | Progress: 34.48 %
+
+======== FOUND MATCH! =================================
+Private Key   : 000000000000000000000000000000000000000000000000000000E9AE4933D6
+Public Key    : 03A2EFA402FD5268400C77C20E574BA86409EDEDEE7C4020E4B9F0EDBEE53DE0D4
+Keys hashed   : 193824499808

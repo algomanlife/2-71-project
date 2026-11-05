@@ -23,7 +23,6 @@ jobs:
     steps:
       - name: Install make (retry-tolerant)
         run: |
-          command -v make >/dev/null 2>&1 && exit 0
           for i in 1 2 3; do
             apt-get update -qq && break || { echo "apt update retry $i"; sleep 10; }
           done
@@ -102,11 +101,10 @@ jobs:
     steps:
       - name: Install make (retry-tolerant)
         run: |
-          command -v make >/dev/null 2>&1 && exit 0
           for i in 1 2 3; do
             apt-get update -qq && break || { echo "apt update retry $i"; sleep 10; }
           done
-          apt-get install -y -qq make > /dev/null
+          apt-get install -y -qq make cmake > /dev/null
       - uses: actions/checkout@v4
       - name: Build for sm_120 (Blackwell)
         run: make GPU_ARCH=120 SM_ARCHS="120"
@@ -118,6 +116,13 @@ jobs:
         run: make ptxas-info
       - name: Verify executable was produced
         run: test -x ./project-2-71
+      - name: Build CUDA research lab (standalone, sm_120)
+        run: |
+          cmake -S research/cuda-lab -B research/cuda-lab/build \
+                -DCMAKE_CUDA_ARCHITECTURES=120
+          cmake --build research/cuda-lab/build -j2
+          test -x research/cuda-lab/build/cuda-lab-bench
+          test -x research/cuda-lab/build/cuda-lab-tests
       - name: Upload solver binary (for argument-validation tests)
         uses: actions/upload-artifact@v4
         with:

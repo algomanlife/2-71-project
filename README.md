@@ -229,6 +229,16 @@ inversions for multiplications.
   evidence-gated proposals O-01…O-09.
 - [Technical audit](docs/audits/INITIAL_TECHNICAL_AUDIT.md) — execution
   flow, hypotheses H1–H9, compile evidence.
+- [Blackwell performance research](docs/research/BLACKWELL_PERFORMANCE.md) —
+  documented facts vs measured vs hypotheses, with sources.
+- [CUDA research lab](research/cuda-lab/README.md) — standalone synthetic
+  benchmarks (precise op definitions) + automated experiment runner.
+- [secp256k1 comparison](docs/research/SECP256K1_COMPARISON.md) —
+  UltrafastSecp256k1 (MIT, verified) evaluation protocol.
+- [Bottleneck analysis](docs/research/BLACKWELL_BOTTLENECKS.md) —
+  evidence inventory; counter profiling blocked by `ERR_NVGPUCTRPERM`.
+- [Optimization results](docs/research/OPTIMIZATION_RESULTS.md) —
+  measured-only record (currently empty by design).
 
 ## 13. Known Limitations
 

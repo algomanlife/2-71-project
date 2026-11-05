@@ -25,26 +25,30 @@
 <text x="56" y="82.0" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="10" fill="#8fa3b8">10500</text>
 <text x="70" y="85.3" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="11" font-weight="700" fill="#34d399">goal: >10,000</text>
 <line x1="64" y1="78" x2="64" y2="400" stroke="#1d2a3a" stroke-width="1"/>
-<rect x="109.0" y="160.8" width="74" height="239.2" rx="3" fill="#155a70"></rect>
-<text x="146.0" y="154.8" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#e8f1f8">7,800.4</text>
-<text x="146.0" y="418.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" fill="#e8f1f8">initial baseline</text>
-<text x="146.0" y="430.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" fill="#8fa3b8">default config</text>
-<rect x="273.0" y="150.6" width="74" height="249.4" rx="3" fill="#155a70"></rect>
-<text x="310.0" y="144.6" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#e8f1f8">8,133.0</text>
-<text x="310.0" y="418.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" fill="#e8f1f8">grid config 512,64</text>
-<text x="310.0" y="430.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" fill="#8fa3b8">(geometry only)</text>
-<rect x="437.0" y="138.3" width="74" height="261.7" rx="3" fill="#34d399"></rect>
-<text x="474.0" y="132.3" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#e8f1f8">8,534.1</text>
-<text x="474.0" y="418.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" fill="#e8f1f8">REAL SEARCH RUN</text>
-<text x="474.0" y="430.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" fill="#8fa3b8">512,64 · full 22 s</text>
-<rect x="601.0" y="122.8" width="74" height="277.2" rx="3" fill="#00d4ff"></rect>
-<text x="638.0" y="116.8" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#e8f1f8">9,040.3</text>
-<text x="638.0" y="418.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" fill="#e8f1f8">median of 5 reps</text>
-<text x="638.0" y="430.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" fill="#8fa3b8">#39+#40 code</text>
-<rect x="765.0" y="103.1" width="74" height="296.9" rx="3" fill="#00d4ff" stroke="#ffffff" stroke-width="1.5"></rect>
-<text x="802.0" y="97.1" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#e8f1f8">9,681.5</text>
-<text x="802.0" y="418.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" fill="#e8f1f8">best observed</text>
-<text x="802.0" y="430.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" fill="#8fa3b8">same build</text>
+<rect x="100.3" y="160.8" width="64" height="239.2" rx="3" fill="#155a70"></rect>
+<text x="132.3" y="154.8" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#e8f1f8">7,800.4</text>
+<text x="132.3" y="418.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" fill="#e8f1f8">initial baseline</text>
+<text x="132.3" y="430.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" fill="#8fa3b8">default config</text>
+<rect x="237.0" y="150.6" width="64" height="249.4" rx="3" fill="#155a70"></rect>
+<text x="269.0" y="144.6" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#e8f1f8">8,133.0</text>
+<text x="269.0" y="418.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" fill="#e8f1f8">grid config 512,64</text>
+<text x="269.0" y="430.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" fill="#8fa3b8">(geometry only)</text>
+<rect x="373.7" y="138.3" width="64" height="261.7" rx="3" fill="#34d399"></rect>
+<text x="405.7" y="132.3" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#e8f1f8">8,534.1</text>
+<text x="405.7" y="418.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" fill="#e8f1f8">REAL SEARCH RUN</text>
+<text x="405.7" y="430.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" fill="#8fa3b8">512,64 · full 22 s</text>
+<rect x="510.3" y="122.8" width="64" height="277.2" rx="3" fill="#00d4ff"></rect>
+<text x="542.3" y="116.8" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#e8f1f8">9,040.3</text>
+<text x="542.3" y="418.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" fill="#e8f1f8">median of 5 reps</text>
+<text x="542.3" y="430.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" fill="#8fa3b8">#39+#40 code</text>
+<rect x="647.0" y="103.4" width="64" height="296.6" rx="3" fill="#00d4ff"></rect>
+<text x="679.0" y="97.4" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#e8f1f8">9,672.7</text>
+<text x="679.0" y="418.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" fill="#e8f1f8">K-2a median</text>
+<text x="679.0" y="430.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" fill="#8fa3b8">hash instr. cuts</text>
+<rect x="783.7" y="99.1" width="64" height="300.9" rx="3" fill="#00d4ff" stroke="#ffffff" stroke-width="1.5"></rect>
+<text x="815.7" y="93.1" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#e8f1f8">9,811.9</text>
+<text x="815.7" y="418.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" fill="#e8f1f8">best observed</text>
+<text x="815.7" y="430.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" fill="#8fa3b8">K-2a build</text>
 <text x="450.0" y="442" text-anchor="middle" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="10" fill="#8fa3b8">metric classes are reported separately and never mixed · white outline = current best</text>
-<text x="450.0" y="458" text-anchor="middle" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="10" fill="#8fa3b8">+19.8% real-run vs historical (7,128.4 same test vector) · +6.3% median code gain (noise floor 0.5%)</text>
+<text x="450.0" y="458" text-anchor="middle" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="10" fill="#8fa3b8">real-run vs historical (7,128.4 same vector): +19.8% · code gains: +6.3% (#39+#40) then +7.4% (K-2a, hash instruction cuts) · noise floor 0.5%</text>
 </svg>

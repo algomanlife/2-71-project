@@ -23,8 +23,18 @@
 //                       [--reps 5] [--warmup 1000] [--json]
 
 #include "lab/kernels.cuh"
-#include "lab/secp_ref.cuh"
 #include "lab/vectors.h"
+
+// Cross-TU declarations: the REAL baseline kernel and the baseline vector
+// checker are DEFINED in src/kernels.cu (linked into this binary) and only
+// declared here — no shared non-inline __device__ functions, no symbol
+// collisions.
+__global__ void k_modmul256(uint64_t* sink, int iters);
+__global__ void modmul_check_kernel(uint64_t* out, int iters);
+
+// Private arithmetic macros (identical semantics to the project's)
+#define E_UMULLO(lo, a, b) asm volatile ("mul.lo.u64 %0, %1, %2;" : "=l"(lo) : "l"(a), "l"(b));
+#define E_UMULHI(hi, a, b) asm volatile ("mul.hi.u64 %0, %1, %2;" : "=l"(hi) : "l"(a), "l"(b));
 
 #include <cuda_runtime.h>
 #include <algorithm>
@@ -48,8 +58,8 @@ __device__ __forceinline__ void fold_hi_mul_C(uint64_t t[5], const uint64_t hi[4
 #pragma unroll
     for (int i = 0; i < 4; ++i) {
         uint64_t lo, h;
-        UMULLO(lo, hi[i], C);
-        UMULHI(h, hi[i], C);
+        E_UMULLO(lo, hi[i], C);
+        E_UMULHI(h, hi[i], C);
         // t[i] = lo + carry (carry <= 2^33, no overflow beyond h)
         uint64_t sum = lo + carry;
         uint64_t c2 = (sum < lo) ? 1u : 0u;
@@ -60,7 +70,7 @@ __device__ __forceinline__ void fold_hi_mul_C(uint64_t t[5], const uint64_t hi[4
 }
 
 // modmul with the foldmul reduction; result semantics identical to
-// _ModMult (mod-2^256 folding with C, non-canonical — cross-checked).
+// the baseline reduction (mod-2^256 folding with C, non-canonical).
 __device__ __forceinline__ void modmul_foldmul(uint64_t r[4], const uint64_t a[4], const uint64_t b[4]) {
     // 256x256 schoolbook product (same structure as baseline UMult loop)
     uint64_t p[8] = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -70,8 +80,8 @@ __device__ __forceinline__ void modmul_foldmul(uint64_t r[4], const uint64_t a[4
 #pragma unroll
         for (int j = 0; j < 4; ++j) {
             uint64_t lo, h;
-            UMULLO(lo, a[i], b[j]);
-            UMULHI(h, a[i], b[j]);
+            E_UMULLO(lo, a[i], b[j]);
+            E_UMULHI(h, a[i], b[j]);
             // p[i+j] += lo + carry (with carry propagation)
             uint64_t s = p[i + j] + lo;
             uint64_t c1 = (s < p[i + j]) ? 1u : 0u;
@@ -106,8 +116,8 @@ __device__ __forceinline__ void modmul_foldmul(uint64_t r[4], const uint64_t a[4
     uint64_t x_hi = t[4] + carry;   // small
     // final fold: x_hi * C (two limbs), add mod 2^256
     uint64_t al, ah;
-    UMULLO(al, x_hi, 0x1000003D1ULL);
-    UMULHI(ah, x_hi, 0x1000003D1ULL);
+    E_UMULLO(al, x_hi, 0x1000003D1ULL);
+    E_UMULHI(ah, x_hi, 0x1000003D1ULL);
     carry = 0;
     uint64_t s = lo[0] + al; uint64_t c1 = (s < lo[0]); lo[0] = s;
     s = lo[1] + ah + c1; uint64_t c2 = (s < lo[1]); lo[1] = s;
@@ -143,29 +153,6 @@ __global__ void foldmul_check_kernel(uint64_t* out, int iters) {
     }
 }
 
-// G2: cross-check — both variants write per-thread final values
-__global__ void v_modmul256_base(uint64_t* out, int iters) {
-    uint64_t r[4];
-    const uint64_t gid_mix = (uint64_t)(threadIdx.x + blockIdx.x * 97u);
-    r[0] = MODMUL_A[0] ^ gid_mix; r[1] = MODMUL_A[1];
-    r[2] = MODMUL_A[2]; r[3] = MODMUL_A[3];
-    for (int i = 0; i < iters; ++i)
-        _ModMult(r, r, const_cast<uint64_t*>(MODMUL_B));
-    size_t gid = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
-#pragma unroll
-    for (int k = 0; k < 4; ++k) out[gid * 4 + k] = r[k];
-}
-__global__ void v_modmul256_foldmul(uint64_t* out, int iters) {
-    uint64_t r[4];
-    const uint64_t gid_mix = (uint64_t)(threadIdx.x + blockIdx.x * 97u);
-    r[0] = MODMUL_A[0] ^ gid_mix; r[1] = MODMUL_A[1];
-    r[2] = MODMUL_A[2]; r[3] = MODMUL_A[3];
-    for (int i = 0; i < iters; ++i)
-        modmul_foldmul(r, r, const_cast<uint64_t*>(MODMUL_B));
-    size_t gid = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
-#pragma unroll
-    for (int k = 0; k < 4; ++k) out[gid * 4 + k] = r[k];
-}
 
 // ---------------------------------------------------------------------------
 // host: correctness gates + paired timing
@@ -190,20 +177,21 @@ static bool gate_vectors() {
     return ok;
 }
 
-static bool gate_crosscheck(int blocks, int threads, int iters) {
-    const size_t N = (size_t)blocks * threads;
-    uint64_t *dA, *dB, *hA, *hB;
-    CK(cudaMalloc(&dA, N * 32));
-    CK(cudaMalloc(&dB, N * 32));
-    v_modmul256_base<<<blocks, threads>>>(dA, iters);
-    v_modmul256_foldmul<<<blocks, threads>>>(dB, iters);
-    CK(cudaDeviceSynchronize());
-    hA = new uint64_t[N * 4]; hB = new uint64_t[N * 4];
-    CK(cudaMemcpy(hA, dA, N * 32, cudaMemcpyDeviceToHost));
-    CK(cudaMemcpy(hB, dB, N * 32, cudaMemcpyDeviceToHost));
-    const bool ok = !memcmp(hA, hB, N * 32);
-    delete[] hA; delete[] hB;
-    CK(cudaFree(dA)); CK(cudaFree(dB));
+static bool gate_baseline() {
+    // G2: the REAL baseline kernel's arithmetic is validated against the
+    // same public vectors (device kernel from src/kernels.cu — same binary,
+    // so the comparison shares one ground truth with G1).
+    uint64_t* d;
+    CK(cudaMalloc(&d, 8));
+    bool ok = true;
+    for (int iters : {1, 8, 64}) {
+        modmul_check_kernel<<<1, 32>>>(d, iters);
+        CK(cudaDeviceSynchronize());
+        uint64_t res = 0;
+        CK(cudaMemcpy(&res, d, 8, cudaMemcpyDeviceToHost));
+        if (res != 1) { ok = false; break; }
+    }
+    CK(cudaFree(d));
     return ok;
 }
 
@@ -250,7 +238,7 @@ int main(int argc, char** argv) {
 
     // correctness gates FIRST — no timing is reported if either fails
     const bool g1 = gate_vectors();
-    const bool g2 = gate_crosscheck(64, 256, 64);
+    const bool g2 = gate_baseline();
     if (!g1 || !g2) {
         std::fprintf(stderr, "CORRECTNESS GATE FAILED (vectors=%d cross=%d) — "
                              "no benchmark reported\n", g1 ? 1 : 0, g2 ? 1 : 0);

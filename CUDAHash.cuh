@@ -311,10 +311,10 @@ __device__ __forceinline__ void RIPEMD160Transform(uint32_t s[5], uint32_t* w)
     s[4] = t + b1 + c2;
 }
 
-static static __device__ void getSHA256_33bytes(const uint8_t* pubkey33, uint8_t sha[32]);
+static __device__ void getSHA256_33bytes(const uint8_t* pubkey33, uint8_t sha[32]);
 static __device__ void getRIPEMD160_32bytes(const uint8_t* sha, uint8_t ripemd[20]);
 
-__device__ __forceinline__ void getSHA256_33bytes(const uint8_t* pubkey33, uint8_t sha[32]) {
+static __device__ __forceinline__ void getSHA256_33bytes(const uint8_t* pubkey33, uint8_t sha[32]) {
     uint32_t M[16];
 #pragma unroll
     for (int i = 0; i < 16; ++i) M[i] = 0;
@@ -375,7 +375,6 @@ static __device__ __forceinline__ void getRIPEMD160_32bytes(const uint8_t* sha, 
     }
 }
 
-static __device__ void getHash160_33bytes(const uint8_t* pubkey33, uint8_t* hash20);
 
 static __device__ void getHash160_33bytes(const uint8_t* pubkey33, uint8_t* hash20)
 {

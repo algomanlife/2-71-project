@@ -139,14 +139,25 @@ error (name + description on stderr).
   <img src="docs/assets/gpu-performance.svg" alt="GPU performance cards" width="820"/>
 </p>
 
-**Best Observed — Grid Sweep** (2026-11-05, CUDA 13.4, early-termination
-known-answer runs; **not sustained throughput**):
+**Current measured — RTX 5090** (2026-11-05, CUDA 13.4, early-termination
+known-answer runs, medians of 5 reps):
 
 | | RTX 5090 (170 SM) | RTX PRO 6000 Blackwell (188 SM) |
 |---|---:|---:|
-| Best observed | **8,133.0 Mkeys/s** (`512,64`) | **7,452.4 Mkeys/s** (`128,64`) |
-| Initial baseline | 7,800.4 Mkeys/s | 7,074.8 Mkeys/s |
+| Median of 5 reps | **9,006–9,048 Mkeys/s** (`512,64`) | — |
+| Best observed | 9,681.5 Mkeys/s (`512,64`) | **7,452.4 Mkeys/s** (`128,64`) |
+| Initial baseline (best observed) | 7,800.4 Mkeys/s | 7,074.8 Mkeys/s |
 | 12/12 grids found reference key | ✅ | ✅ |
+
+**Real search run** (manual rig invocation, 2026-11-05, post-#40 engine,
+`--grid 512,64`, second historical test vector
+`8000000000:ffffffffff`): **8,534.1 Mkeys/s sustained** — average over
+the full 22.0 s run, 193.9 G keys hashed, reference key found. The same
+test vector in the original historical log (default config) ran at
+7,128.4 Mkeys/s → **+19.8%** from launch-geometry + code changes.
+Sustained full-run averages sit ~5–6% below the sweep's best-observed
+peaks; both metrics are reported, never mixed
+([PERFORMANCE_HISTORY](docs/benchmarks/PERFORMANCE_HISTORY.md)).
 
 Do not infer universal GPU ranking from this single series; see the
 methodology and limitations in

@@ -6,14 +6,23 @@ priority** — from the observed 7.5–8.1 Gkeys/s toward >10 Gkeys/s
 must pass the correctness gates (27-test suite + `proof.py` on hardware)
 and be measured with medians before any claim.
 
-## Status (2026-11-05, rig measurements)
+## Status (2026-11-05, rig measurements — Phase 1 CLOSED)
 
-**Current measured: 9,040.3 Mkeys/s median (`512,64`, 5 reps, commit
-5c78d872) — best observed 9,681.5.** The +6.3% jump vs the same-day
-07a8509 median (8,501.1, noise floor 0.5%) is the combined effect of
-PR #39 (launch bounds) + PR #40 (hash-core forceinline); build
-provenance of that record is unresolved (see PERFORMANCE_HISTORY
-caveat ²). Remaining gap to 10 Gkeys/s: **+11%**.
+**Current measured: ~9,000–9,050 Mkeys/s median (`512,64`, 5 reps,
+commit 5c78d872; four independent records: 9,048.0 / 9,040.3 / 9,006.7
+default-build legs + 9,041.0 RDC=0) — best observed 9,681.5.** The
++6.3% jump vs the same-day 07a8509 median (8,501.1) is attributed to
+the #39+#40 code changes (launch bounds + hash-core forceinline); the
+E-S2 labeled pair proved `RDC=0` is at parity, resolving the earlier
+provenance caveat. **All Phase-1 zero-risk levers are now measured
+NULL** (E-S1 saturated, E-S2 +0.38% < noise, E-S4 +0.44% < noise):
+no build knob or launch-geometry setting moves this kernel. Remaining
+gap to 10 Gkeys/s: **+11% — must come from kernel work (K-1..K-3),
+starting with K-2 (hash160 instruction count).**
+
+Reproducibility anchors: same-binary drift 0.09% (T113559Z vs
+T113659Z); same-day cross-record ~0.5% (noise floor); lab repeat
+within 0.3% (T121316Z).
 
 ## Where the time goes (calibrated by the 2026-11-05 lab run)
 

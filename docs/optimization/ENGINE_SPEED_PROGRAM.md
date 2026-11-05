@@ -95,7 +95,8 @@ issue-rate verdict: hash is the instruction consumer, so K-2 leads:**
 
 | ID | Change | Hypothesis | Risk |
 |---|---|---|---|
-| K-2 | hash160 micro-optimizations (RIPEMD round scheduling, register allocation, shared subexpressions between the 2×80 steps) | hash ≈ dominant share of per-key instructions → single-digit % each, compounding | medium |
+| K-2a | hash160 instruction cuts, first slice: SHA-256 `K[64]`/`IV[8]` from `__constant__` memory → `constexpr` (values fold into immediates via the unrolled constant indices); RIPEMD `ROL` → explicit `__funnelshift_l` | removes up to 64 constant-memory loads (LDC) per key, each in the `T1` dependency chain; guarantees single-instruction rotations for all 166 RIPEMD rotations. Expected +0.5–2% | low (bit-identical output; vector tests + known-answer + medians) |
+| K-2 | further hash160 micro-optimizations (RIPEMD round scheduling, register allocation, shared subexpressions between the 2×80 steps) | hash ≈ dominant share of per-key instructions → single-digit % each, compounding | medium |
 | K-1 | subp[] segmentation (S=8/16 per segment, registers only) | removes the 136 high-offset LDL/STL from the hot loop | high (must reproduce identical key coverage; proof.py is the gate) |
 | K-3 | point-add restructure (share subexpressions between the ± pair) | fewer modmuls per i-step (EC has 3× headroom, so gains here are real but bounded) | medium-high |
 | K-4 | __reduce/ballot-based hash counting, poll cadence | minor | low |

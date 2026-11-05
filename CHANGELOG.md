@@ -6,6 +6,23 @@ releases exist.
 
 ## [Unreleased]
 
+### K-2a: hash160 instruction cuts, first slice (2026-11-05)
+
+Changed
+- `CUDAHash.cuh`: SHA-256 `K[64]`/`IV[8]` moved from `__device__
+  __constant__` memory to `constexpr` arrays — with the 64-round loop
+  fully unrolled, every `K[t]`/`IV[i]` access has a compile-time index
+  and folds into instruction immediates, removing up to 64 constant
+  loads (LDC) per hashed key (each previously in the T1 dependency
+  chain). Values unchanged (one missing `ul` suffix typo fixed:
+  `0x1f83d9ab`).
+- `CUDAHash.cuh`: RIPEMD-160 `ROL` macro now uses `__funnelshift_l`
+  explicitly — one SHF-class instruction per rotation instead of a
+  shift-or sequence (compiler pattern-matching not guaranteed).
+- First kernel-level experiment of the engine-speed program (Phase 1
+  closed, all zero-risk levers null). Accept/revert decision by rig
+  medians: `grid_sweep.sh --repeat 5 --grids "512,64"` vs the 9,006.7
+  same-day default-build median.
 ### README results hub: new charts + refreshed data sections (2026-11-05)
 
 Added

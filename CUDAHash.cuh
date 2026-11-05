@@ -44,7 +44,13 @@ __device__ __forceinline__ uint32_t smallS1(uint32_t x){ return ror32(x,17) ^ ro
 __device__ __forceinline__ uint32_t Ch (uint32_t x,uint32_t y,uint32_t z){ return (x & y) ^ (~x & z); }
 __device__ __forceinline__ uint32_t Maj(uint32_t x,uint32_t y,uint32_t z){ return (x & y) | (x & z) | (y & z); }
 
-static __device__ __constant__ uint32_t K[64] = {
+// K-2a (engine speed program): K/IV are constexpr, not __constant__
+// memory. With the 64-round loop fully unrolled every K[t] access has
+// a compile-time index, so the values fold into instruction immediates
+// — this removes up to 64 constant-memory loads (LDC) per hashed key,
+// each of which also sat in the T1 dependency chain. Values unchanged
+// (bit-for-bit identical output; correctness gates arbitrate).
+static constexpr uint32_t K[64] = {
     0x428A2F98,0x71374491,0xB5C0FBCF,0xE9B5DBA5,0x3956C25B,0x59F111F1,0x923F82A4,0xAB1C5ED5,
     0xD807AA98,0x12835B01,0x243185BE,0x550C7DC3,0x72BE5D74,0x80DEB1FE,0x9BDC06A7,0xC19BF174,
     0xE49B69C1,0xEFBE4786,0x0FC19DC6,0x240CA1CC,0x2DE92C6F,0x4A7484AA,0x5CB0A9DC,0x76F988DA,
@@ -55,9 +61,9 @@ static __device__ __constant__ uint32_t K[64] = {
     0x748F82EE,0x78A5636F,0x84C87814,0x8CC70208,0x90BEFFFA,0xA4506CEB,0xBEF9A3F7,0xC67178F2
 };
 
-static __device__ __constant__ uint32_t IV[8] = {
+static constexpr uint32_t IV[8] = {
     0x6a09e667ul,0xbb67ae85ul,0x3c6ef372ul,0xa54ff53aul,
-    0x510e527ful,0x9b05688cul,0x1f83d9ab ,0x5be0cd19ul
+    0x510e527ful,0x9b05688cul,0x1f83d9abul,0x5be0cd19ul
 };
 __device__ __forceinline__ void SHA256Initialize(uint32_t s[8])
 {
@@ -109,7 +115,12 @@ __device__ __forceinline__ void RIPEMD160Initialize(uint32_t s[5])
 
 }
 
-#define ROL(x,n) ((x>>(32-n))|(x<<n))
+// K-2a (engine speed program): explicit funnel shift guarantees one
+// SHF-class instruction per rotation instead of the shift-or-shift-or
+// sequence (compiler pattern-matching is not guaranteed). All RIPEMD-160
+// rotation amounts are in [5,16], within __funnelshift_l's 0..31 range;
+// every call site passes plain variables, so double evaluation is safe.
+#define ROL(x,n) __funnelshift_l((x), (x), (n))
 #define f1(x, y, z) (x ^ y ^ z)
 #define f2(x, y, z) ((x & y) | (~x & z))
 #define f3(x, y, z) ((x | ~y) ^ z)

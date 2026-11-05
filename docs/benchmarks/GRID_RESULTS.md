@@ -19,7 +19,7 @@ early-termination known-answer runs, not sustained throughput.**
 | Driver | 615.71.09 | not recorded |
 
 - **Search:** known-answer vector — range `2000000000:3FFFFFFFFF`
-  (2^33 keys), target `1HBtApAFA9B2YZw3G2YKSMCtb3dVnjuNe2`, expected key
+  (2^37 keys), target `1HBtApAFA9B2YZw3G2YKSMCtb3dVnjuNe2`, expected key
   `0x22382FACD0`.
 - **Termination:** each run stops when the reference key is found
   (early-termination known-answer test). The printed speed is the best

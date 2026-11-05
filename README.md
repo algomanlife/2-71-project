@@ -190,7 +190,7 @@ python3 proof.py --range 200000000:3FFFFFFFF --grid 512,512   # GPU
 
 ## 10. Benchmark Methodology
 
-- **What was run:** early-termination known-answer searches (2^33-key
+- **What was run:** early-termination known-answer searches (2^37-key
   range) across 12 grid configurations on both GPUs; best observed speed
   per run; all configurations found the reference key.
 - **Honesty rules:** values are best-observed, single runs — not
@@ -247,6 +247,8 @@ inversions for multiplications.
   benchmarks (precise op definitions) + automated experiment runner.
 - [secp256k1 comparison](docs/research/SECP256K1_COMPARISON.md) —
   UltrafastSecp256k1 (MIT, verified) evaluation protocol.
+- [Search discrepancy investigation](docs/research/SEARCH_DISCREPANCY_INVESTIGATION.md) —
+  grid-config traversal order vs progress accounting (Phase 4).
 - [Bottleneck analysis](docs/research/BLACKWELL_BOTTLENECKS.md) —
   evidence inventory; counter profiling blocked by `ERR_NVGPUCTRPERM`.
 - [Optimization results](docs/research/OPTIMIZATION_RESULTS.md) —

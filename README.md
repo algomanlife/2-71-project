@@ -136,7 +136,7 @@ error (name + description on stderr).
 ## 7. GPU Performance
 
 <p align="center">
-  <img src="docs/assets/gpu-performance.svg" alt="GPU performance cards" width="820"/>
+  <img src="docs/assets/speed-progression.svg" alt="Engine speed progression chart" width="880"/>
 </p>
 
 **Current measured — RTX 5090** (2026-11-05, CUDA 13.4, early-termination
@@ -163,7 +163,7 @@ Do not infer universal GPU ranking from this single series; see the
 methodology and limitations in
 [GRID_RESULTS.md](docs/benchmarks/GRID_RESULTS.md).
 
-## 8. Grid Benchmark Results
+## 8. Grid Benchmark Results & Phase-1 Verdicts
 
 <p align="center">
   <img src="docs/assets/grid-comparison.svg" alt="Grid sweep comparison chart" width="860"/>
@@ -177,6 +177,24 @@ Highlights: per-GPU optima differ (`512,64` vs `128,64`); `512,128`
 dips on both GPUs; `256,128` found the key but produced no speed line
 (recorded missing, not zero).
 
+**Phase-1 engine-speed experiments (RTX 5090, medians of 5 reps each):**
+
+<p align="center">
+  <img src="docs/assets/phase1-verdicts.svg" alt="Phase-1 verdicts: geometry plateau and null build levers" width="880"/>
+</p>
+
+| Experiment | Median | Verdict |
+|---|---:|---|
+| E-S1 launch geometry (6 grids) | best 8,551.2 (`512,32`) | geometry saturated — plateau ±0.1% for batch ≥ 512 |
+| E-S2 `RDC=0` vs default build | 9,041.0 vs 9,006.7 | **null** (+0.38%, inside ±0.5% noise) |
+| E-S4 `MAX_BATCH_SIZE=512` | 9,046.0 | **null** (+0.44%, inside noise) |
+
+Verdicts are recorded with their numbers in
+[PERFORMANCE_HISTORY.md](docs/benchmarks/PERFORMANCE_HISTORY.md);
+records in [data/](docs/benchmarks/data/) (sweep-20261105T*.json).
+Same-binary reproducibility 0.09%; same-day noise floor ~0.5% (no
+clock lock on the rig — medians compensate).
+
 ## 9. Correctness Validation
 
 <p align="center">
@@ -185,9 +203,12 @@ dips on both GPUs; `256,128` found the key but produced no speed line
 
 | Suite | Result | Where |
 |---|---|---|
-| Unit + GPU tests | **19/19 PASS** (RTX 5090) | `tests/` |
+| Unit + GPU tests | **33 tests**: 15 CPU (run anywhere) + 18 GPU-required | `tests/` |
 | Proof suite (no-skip key coverage) | **528/528 PASS** (RTX 5090 only) | `proof.py` |
 | Grid configs found reference key | **12/12** on both GPUs | sweep runs |
+| Median sweep workflow (RTX 5090) | **60/60 valid runs**, all found the reference key | [data/](docs/benchmarks/data/) |
+| Real search runs | historical + 2026-11-05c logs, reference keys found | [data/](docs/benchmarks/data/) |
+| Lab correctness (synthetic benches) | 9/9 bit-for-bit vs host references | `research/cuda-lab` |
 
 These are strong evidence for the tested configurations — not "547
 independent proofs of complete correctness". The 528-test proof run is
@@ -201,19 +222,26 @@ python3 proof.py --range 200000000:3FFFFFFFF --grid 512,512   # GPU
 
 ## 10. Benchmark Methodology
 
-- **What was run:** early-termination known-answer searches (2^37-key
-  range) across 12 grid configurations on both GPUs; best observed speed
-  per run; all configurations found the reference key.
-- **Honesty rules:** values are best-observed, single runs — not
-  medians, not sustained throughput; missing speed lines are recorded as
-  missing, never zero; provenance preserved in JSON.
-- **Next-grade workflow (infrastructure ready):**
-  `benchmarks/sweep/grid_sweep.sh` adds repetitions, medians, variance,
-  and power telemetry per configuration;
-  `benchmarks/profile/ncu_profile.sh` collects the Nsight Compute metric
-  set for the E1 bottleneck classification.
+- **Two grades of measurement, never mixed:**
+  - *Grid sweep (both GPUs)*: early-termination known-answer searches
+    (2^37-key range), 12 grid configs, best-observed speed per run —
+    single runs, not medians.
+  - *Median sweep workflow (RTX 5090, executed)*:
+    `benchmarks/sweep/grid_sweep.sh --repeat 5` — medians with variance,
+    power telemetry (dmon 1 Hz), raw run logs retained, failed runs
+    recorded with exit codes and excluded from statistics.
+- **Noise discipline (measured on the rig, no clock lock available):**
+  same-binary drift 0.09%, same-day noise floor ~0.5%, cross-day drift
+  ~5% — accept/reject decisions use same-day medians only.
+- **Provenance:** every record carries commit, GPU, driver, CUDA
+  version, and (since `19ffaf6`) `.build-flags` — the actual nvcc/rdc
+  flags of the swept binary.
+- **Honesty rules:** missing speed lines are recorded as missing, never
+  zero; lab synthetic Gops are never compared with engine Mkeys/s.
 - Benchmark records live in `docs/benchmarks/data/` and are tracked
-  cumulatively in [PERFORMANCE_HISTORY.md](docs/benchmarks/PERFORMANCE_HISTORY.md).
+  cumulatively in [PERFORMANCE_HISTORY.md](docs/benchmarks/PERFORMANCE_HISTORY.md);
+  `benchmarks/profile/ncu_profile.sh` is ready for the Nsight Compute
+  metric set (blocked by `ERR_NVGPUCTRPERM` on the current rig).
 
 ## 11. Architecture
 
@@ -234,18 +262,28 @@ inversions for multiplications.
 
 ## 12. Performance Engineering
 
+**Lab calibration — where the ceiling is (RTX 5090, measured):**
+
+<p align="center">
+  <img src="docs/assets/lab-calibration.svg" alt="Lab calibration: modmul ceiling vs engine usage" width="880"/>
+</p>
+
 **User & reference documentation:**
 [Usage (CLI reference)](docs/USAGE.md) ·
 [Search workflow](docs/SEARCH_WORKFLOW.md) ·
 [Proof & validation](docs/PROOF_AND_VALIDATION.md) ·
 [Troubleshooting](docs/TROUBLESHOOTING.md)
 
+- **[Engine speed program (top priority)](docs/optimization/ENGINE_SPEED_PROGRAM.md)** —
+  measured path toward >10 Gkeys/s on the RTX 5090. **Phase 1 closed**
+  (all zero-risk levers measured null); current: ~9.0 Gkeys/s median,
+  real-run sustained 8,534 Mkeys/s; next: kernel instruction-count work
+  (K-2 hash160 → K-1 subp segmentation → K-3 point-add restructure).
 - [Stack-frame investigation](docs/research/STACK_FRAME_INVESTIGATION.md) —
   the 16.7 KB kernel frame is fully attributed (`subp[]` = 16·B); grid
   `1024,*` performing comparably to `128,*` shows frame size alone does
-  not determine throughput; runtime profiling (E1) is the arbiter.
-- **[Engine speed program (top priority)](docs/optimization/ENGINE_SPEED_PROGRAM.md)** —
-  measured path toward >10 Gkeys/s on the RTX 5090.
+  not determine throughput (now confirmed by E-S4: halving the frame is
+  speed-neutral).
 - [Performance baseline & bottleneck classification](docs/optimization/PERFORMANCE_BASELINE.md)
 - [Optimization experiment log](docs/optimization/EXPERIMENTS.md) —
   one mechanism per experiment, medians with variance, keep-or-revert
@@ -269,13 +307,17 @@ inversions for multiplications.
 
 ## 13. Known Limitations
 
-- Published speeds are best-observed from early-termination runs; no
-  sustained-throughput claim exists yet.
-- Single measurements per grid cell (repetition workflow prepared, not
-  yet run).
+- RTX 5090 results now include medians-of-5 and a sustained real-run;
+  the RTX PRO 6000 series is still best-observed single runs only.
+- No clock lock available on the benchmark rig — noise is handled by
+  same-day median pairs (0.09% same-binary, ~0.5% same-day), not
+  eliminated.
 - RTX PRO 6000: driver version not recorded; full test/proof suites not
   run on it (grid sweep only).
-- Nsight Compute profiling not yet executed (E1 pending).
+- Nsight Compute profiling blocked by `ERR_NVGPUCTRPERM` on the rig —
+  bottleneck classification rests on lab calibration + A/B builds.
+- The lab `ec-scalar-mul` number is pending re-measurement with the
+  fixed bench (zero-scalar erratum, 2026-11-05).
 - No LICENSE file yet (GPL-3.0-compatible decision open) — see
   attribution.
 
@@ -286,8 +328,8 @@ inversions for multiplications.
 | 1 | Migration & rebranding | ✅ |
 | 2 | CUDA 13 modernization + validation infrastructure | ✅ |
 | 3 | Foundational optimization & performance research | ✅ |
-| 4 | Hardware validation & benchmarking | 🔄 in progress (results published; profiling next) |
-| 5 | Evidence-gated optimization experiments | 🔄 E1 profiling + EXP-01 next |
+| 4 | Hardware validation & benchmarking | ✅ medians, real-run, lab calibration published |
+| 5 | Engine speed >10 Gkeys/s program | 🔄 Phase 1 closed (levers null); K-2 kernel work active |
 
 ## 15. Changelog
 

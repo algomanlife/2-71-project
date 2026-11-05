@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="440" viewBox="0 0 900 440" role="img" aria-label="Phase-1 experiment verdicts: geometry plateau and null build levers">
+<rect width="900" height="440" rx="12" fill="#0b1017"/>
+<text x="450.0" y="26" text-anchor="middle" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="15" font-weight="700" fill="#e8f1f8">Phase-1 Zero-Risk Levers — All Measured, All Closed (RTX 5090)</text>
+<text x="450.0" y="44" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" fill="#8fa3b8">medians of 5 reps · same day back-to-back · 2026-11-05 · noise floor ±0.5%</text>
+<text x="239.0" y="54" text-anchor="middle" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="12" font-weight="700" fill="#e8f1f8">E-S1 · launch geometry (medians)</text>
+<line x1="58" y1="120.0" x2="454" y2="120.0" stroke="#1d2a3a" stroke-width="1"/>
+<text x="52" y="123.0" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8.5" fill="#8fa3b8">7600</text>
+<line x1="58" y1="110.2" x2="454" y2="110.2" stroke="#1d2a3a" stroke-width="1"/>
+<text x="52" y="113.2" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8.5" fill="#8fa3b8">7800</text>
+<line x1="58" y1="100.4" x2="454" y2="100.4" stroke="#1d2a3a" stroke-width="1"/>
+<text x="52" y="103.4" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8.5" fill="#8fa3b8">8000</text>
+<line x1="58" y1="90.5" x2="454" y2="90.5" stroke="#1d2a3a" stroke-width="1"/>
+<text x="52" y="93.5" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8.5" fill="#8fa3b8">8200</text>
+<line x1="58" y1="80.7" x2="454" y2="80.7" stroke="#1d2a3a" stroke-width="1"/>
+<text x="52" y="83.7" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8.5" fill="#8fa3b8">8400</text>
+<line x1="58" y1="70.9" x2="454" y2="70.9" stroke="#1d2a3a" stroke-width="1"/>
+<text x="52" y="73.9" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8.5" fill="#8fa3b8">8600</text>
+<line x1="58" y1="66" x2="58" y2="120" stroke="#1d2a3a" stroke-width="1"/>
+<rect x="58" y="73.3" width="396" height="0.29" fill="#00d4ff" fill-opacity="0.08" stroke="#00d4ff" stroke-opacity="0.35" stroke-dasharray="3,3"/>
+<text x="454" y="68.3" text-anchor="end" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="9.5" fill="#00d4ff">batch ≥ 512: plateau 8,545–8,551 (±0.1%)</text>
+<rect x="74.0" y="107.8" width="34" height="12.2" rx="2" fill="#00d4ff"></rect>
+<text x="91.0" y="103.8" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8" fill="#e8f1f8">7849</text>
+<text x="91.0" y="134.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8.5" fill="#8fa3b8">128,16</text>
+<rect x="140.0" y="86.1" width="34" height="33.9" rx="2" fill="#00d4ff"></rect>
+<text x="157.0" y="82.1" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8" fill="#e8f1f8">8290</text>
+<text x="157.0" y="134.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8.5" fill="#8fa3b8">256,32</text>
+<rect x="206.0" y="73.6" width="34" height="46.4" rx="2" fill="#00d4ff"></rect>
+<text x="223.0" y="69.6" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8" fill="#e8f1f8">8545</text>
+<text x="223.0" y="134.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8.5" fill="#8fa3b8">512,16</text>
+<rect x="272.0" y="73.3" width="34" height="46.7" rx="2" fill="#00d4ff" stroke="#ffffff" stroke-width="1.2"></rect>
+<text x="289.0" y="69.3" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8" fill="#e8f1f8">8551</text>
+<text x="289.0" y="134.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8.5" fill="#8fa3b8">512,32</text>
+<rect x="338.0" y="73.6" width="34" height="46.4" rx="2" fill="#00d4ff"></rect>
+<text x="355.0" y="69.6" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8" fill="#e8f1f8">8546</text>
+<text x="355.0" y="134.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8.5" fill="#8fa3b8">512,64</text>
+<rect x="404.0" y="73.5" width="34" height="46.5" rx="2" fill="#00d4ff"></rect>
+<text x="421.0" y="69.5" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8" fill="#e8f1f8">8547</text>
+<text x="421.0" y="134.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8.5" fill="#8fa3b8">1024,32</text>
+<text x="239.0" y="152" text-anchor="middle" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="9.5" fill="#8fa3b8">verdict: geometry saturated — no path to >10 G from launch tuning</text>
+<text x="673.0" y="54" text-anchor="middle" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="12" font-weight="700" fill="#e8f1f8">E-S2 / E-S4 · build levers (medians, axis zoomed)</text>
+<rect x="478" y="83.4" width="398" height="32.4" fill="#34d399" fill-opacity="0.10" stroke="#34d399" stroke-opacity="0.4" stroke-dasharray="4,4"/>
+<text x="872" y="78.4" text-anchor="end" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="9.5" fill="#34d399">±0.5% same-day noise band</text>
+<line x1="540" y1="120.0" x2="876" y2="120.0" stroke="#1d2a3a" stroke-width="1"/>
+<text x="534" y="123.0" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8.5" fill="#8fa3b8">8950</text>
+<line x1="540" y1="102.0" x2="876" y2="102.0" stroke="#1d2a3a" stroke-width="1"/>
+<text x="534" y="105.0" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8.5" fill="#8fa3b8">9000</text>
+<line x1="540" y1="84.0" x2="876" y2="84.0" stroke="#1d2a3a" stroke-width="1"/>
+<text x="534" y="87.0" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8.5" fill="#8fa3b8">9050</text>
+<line x1="540" y1="66.0" x2="876" y2="66.0" stroke="#1d2a3a" stroke-width="1"/>
+<text x="534" y="69.0" text-anchor="end" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8.5" fill="#8fa3b8">9100</text>
+<line x1="540" y1="66" x2="540" y2="120" stroke="#1d2a3a" stroke-width="1"/>
+<rect x="568.0" y="99.6" width="56" height="20.4" rx="2" fill="#00d4ff"></rect>
+<text x="596.0" y="95.6" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8.5" fill="#e8f1f8">9,006.7</text>
+<text x="596.0" y="134.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8.5" fill="#8fa3b8">default build</text>
+<rect x="680.0" y="87.2" width="56" height="32.8" rx="2" fill="#8a5cf6"></rect>
+<text x="708.0" y="83.2" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8.5" fill="#e8f1f8">9,041.0</text>
+<text x="708.0" y="134.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8.5" fill="#8fa3b8">RDC=0</text>
+<rect x="792.0" y="85.4" width="56" height="34.6" rx="2" fill="#8a5cf6"></rect>
+<text x="820.0" y="81.4" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8.5" fill="#e8f1f8">9,046.0</text>
+<text x="820.0" y="134.0" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="8.5" fill="#8fa3b8">MAX_BATCH=512</text>
+<text x="673.0" y="152" text-anchor="middle" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="9.5" fill="#8fa3b8">verdict: +0.38% / +0.44% — inside noise → NULL (recorded, not hidden)</text>
+<text x="450.0" y="376" text-anchor="middle" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="10" fill="#8fa3b8">Phase 1 closed: no zero-risk lever moves this kernel — the remaining +11% to 10 Gkeys/s is kernel work (K-2 hash → K-1 subp → K-3 point-add)</text>
+<text x="450.0" y="394" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" fill="#8fa3b8">data: sweep-20261105T104604Z.json · sweep-20261105T121018Z / T121117Z / T121215Z.json</text>
+</svg>

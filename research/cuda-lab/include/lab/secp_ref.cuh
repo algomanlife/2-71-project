@@ -3,9 +3,10 @@
 // history in the main repository) for ISOLATED performance
 // characterization in the research lab. Semantics identical.
 // Provenance: derived from JeanLucPons/VanitySearch (GPL-3.0) and
-// FixedPaul/VanitySearch-Bitcrack (AGPL-3.0) via CUDACyclone — see
-// the repository ATTRIBUTION.md. This file is research tooling only;
-// it is NOT used by the project's search application.
+// FixedPaul/VanitySearch-Bitcrack (AGPL-3.0) via the original upstream
+// project — full attribution in the repository ATTRIBUTION.md. This
+// file is research tooling only; it is NOT used by the project's
+// search application.
 #pragma once
 
 #include <cstdint>

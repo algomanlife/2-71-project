@@ -30,7 +30,8 @@
 // declared here — no shared non-inline __device__ functions, no symbol
 // collisions.
 __global__ void k_modmul256(uint64_t* sink, int iters);
-__global__ void modmul_check_kernel(uint64_t* out, int iters);
+namespace lab { __global__ void modmul_check_kernel(uint64_t* out, int iters); }
+using lab::modmul_check_kernel;
 
 // Private arithmetic macros (identical semantics to the project's)
 #define E_UMULLO(lo, a, b) asm volatile ("mul.lo.u64 %0, %1, %2;" : "=l"(lo) : "l"(a), "l"(b));

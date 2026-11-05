@@ -58,7 +58,7 @@ volume at those sizes.
 repeatability tests used the 4096-key range that RC-1 could not schedule
 → solver exited non-zero with no output → subtest failures and an ERROR
 in repeatability (no private key parsed). The randomized test derived
-2^33-sized ranges from the full search interval → each run searched
+2^37-sized ranges from the full search interval → each run searched
 billions of keys ("excessively long execution").
 
 **Fix:** complete rewrite (below).

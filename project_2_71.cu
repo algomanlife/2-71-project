@@ -512,6 +512,23 @@ int main(int argc, char** argv) {
             if (!borrow && i+1<4) { for (int k=i+1;k<4;++k) len_minus1[k]=range_len[k]; break; }
         }
     }
+    // Boundary diagnostics: warn when the range extends to or beyond the
+    // secp256k1 group order n. Scalars >= n wrap on the curve (k and k-n
+    // give the same public key), so such ranges do not cover additional
+    // distinct private keys. Reporting-only: the search is unchanged.
+    {
+        const uint64_t ORDER[4] = { 0xBFD25E8CD0364141ULL, 0xBAAEDCE6AF48A03BULL,
+                                    0xFFFFFFFFFFFFFFFEULL, 0xFFFFFFFFFFFFFFFFULL };
+        bool end_ge_order = false;
+        for (int i = 3; i >= 0; --i) {
+            if (range_end[i] != ORDER[i]) { end_ge_order = (range_end[i] > ORDER[i]); break; }
+        }
+        if (end_ge_order) {
+            std::cerr << "Warning: range extends to or beyond the secp256k1 group order; "
+                         "scalars >= n wrap on the curve and do not yield additional "
+                         "distinct private keys.\n";
+        }
+    }
     {   uint64_t and0 = range_start[0] & len_minus1[0];
         uint64_t and1 = range_start[1] & len_minus1[1];
         uint64_t and2 = range_start[2] & len_minus1[2];
@@ -847,12 +864,22 @@ int main(int argc, char** argv) {
     // any GPU work.)
     int exit_code = EXIT_SUCCESS;
 
+    // Final hash-accounting read (same counter the Progress line uses):
+    // makes the reported candidate count directly checkable against the
+    // completed work — on exhaustive completion it must equal the range
+    // length exactly (each key hashed exactly once).
+    unsigned long long h_hashes_final = 0ull;
+    if (!runtime_error) {
+        ck(cudaMemcpy(&h_hashes_final, d_hashes_accum, sizeof(unsigned long long), cudaMemcpyDeviceToHost), "final read hashes");
+    }
+
     if (h_found_flag == FOUND_READY) {
         FoundResult host_result{};
         ck(cudaMemcpy(&host_result, d_found_result, sizeof(FoundResult), cudaMemcpyDeviceToHost), "read found_result");
         std::cout << "\n======== FOUND MATCH! =================================\n";
         std::cout << "Private Key   : " << formatHex256(host_result.scalar) << "\n";
         std::cout << "Public Key    : " << formatCompressedPubHex(host_result.Rx, host_result.Ry) << "\n";
+        std::cout << "Keys hashed   : " << h_hashes_final << "\n";
     } else if (runtime_error) {
         std::cout << "======== CUDA ERROR ===================================\n";
         std::cout << "Execution failed: " << runtime_error_msg
@@ -865,6 +892,7 @@ int main(int argc, char** argv) {
     } else if (completed_all) {
         std::cout << "======== KEY NOT FOUND (exhaustive) ===================\n";
         std::cout << "Target hash160 was not found within the specified range.\n";
+        std::cout << "Keys hashed   : " << h_hashes_final << "\n";
         exit_code = 1;
     } else {
         std::cout << "======== TERMINATED ===================================\n";

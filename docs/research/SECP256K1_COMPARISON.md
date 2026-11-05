@@ -28,23 +28,44 @@ isolated characterization.
 Repository: https://github.com/shrec/UltrafastSecp256k1 (61 stars,
 actively maintained; author Vano Chkheidze).
 
-| Criterion | Finding (verified via GitHub API / repo, 2026-11-05) |
+| Criterion | Finding (verified via GitHub API / repo, 2026-11-05; re-checked 2026-11-05 evening) |
 |---|---|
 | License | **MIT** — verified from the LICENSE file; permissive, compatible with evaluation and (license-wise) with any downstream choice |
-| CUDA support | yes — `src/cuda` backend (+ OpenCL, Metal); "stable 13-op GPU C ABI (8 core + 5 batch ops)" |
-| sm_120 compilation | **not yet verified** — requires CUDA toolkit ≥ 3.18 CMake, C++20; must be attempted on the rig before any claim |
-| API design | single ops + batch ops (GPU ABI); libsecp256k1 compat shims (opt-in) |
+| CUDA support | yes — `src/cuda` backend (+ OpenCL, Metal, embedded, WASM); stable 13-op GPU C ABI (8 core + 5 batch ops, incl. Pippenger batch) |
+| sm_120 compilation | **not yet verified** — requires CMake ≥ 3.18, C++20; must be attempted on the rig before any claim |
+| API design | dual-path design: variable-time FAST path + constant-time CT path; single ops + batch ops (GPU ABI); libsecp256k1 compat shims (opt-in); 10+ language bindings |
 | Correctness | public-vector verification REQUIRED before any use; repo self-describes as having **no external third-party security audit** (self-generated CAAS evidence only) |
-| Performance | self-reported CPU-side numbers (~1.5× vs libsecp256k1 for some paths); **CPU speed does not imply GPU speed — must be measured** |
+| Performance | self-reported CPU-side ECDSA/Schnorr ~1.48–1.52× vs libsecp256k1 (GCC 14.2, 2026-09-07, turbo-locked); binary 1.83× larger `.text`; **CPU signing speed does not imply GPU search-loop speed — must be measured** |
 | Memory | not yet measured |
 | Build requirements | CMake ≥ 3.18, C++20 (GCC 11+/Clang 15+); no runtime deps for CPU build |
-| Maintenance/portability | broad platform matrix (12+); production usage mentioned (SparrowWallet Frigate) |
+| Maintenance/portability | very active (3,125+ commits); broad platform matrix (12+); production usage mentioned (SparrowWallet Frigate) |
+
+### Hot-path relevance verdict (maintainer question, 2026-11-05)
+
+Asked: "can replacing the current scalar-multiplication logic with
+UltrafastSecp256k1 raise search throughput?" **Answer: no — structural,
+not incremental.** The search engine's hot loop performs **no scalar
+multiplications at all**: it walks ±(i+1)·G incrementally with batch
+inversion (~3.5 modmul/key, measured at 33% of the 95.4 Gops/s lab
+modmul ceiling). A full k·G ladder — the operation this library
+optimizes — costs ~two orders of magnitude more per key. Replacing the
+walk with per-key scalar mults would be a large regression, on any
+library. Scalar mults occur only in the one-time setup phase (seconds),
+where a swap would change nothing sustained.
+
+Where the library *could* matter: (a) its GPU field arithmetic as a
+lab comparison point for `modmul256` (after sm_120 compile +
+public-vector verification), (b) ideas for field reduction if a future
+K-3 restructure wants them. Measured bottleneck of the engine, however,
+is the hash160 pipeline + instruction issue — outside this library's
+scope.
 
 Preliminary assessment: **evaluation candidate only**. MIT licensing is
 compatible; but (a) no external audit, (b) GPU backend is a separate
-review profile, (c) zero measured data on our hardware. Decision on any
-use belongs to a future, explicitly-scoped phase — never silently into
-the search engine.
+review profile, (c) zero measured data on our hardware, (d) the
+architecture of our hot loop does not need what it optimizes. Decision
+on any use belongs to a future, explicitly-scoped phase — never
+silently into the search engine.
 
 ### 3. Independent CPU reference (validation only)
 
@@ -67,6 +88,6 @@ independent oracle for all test vectors; not a performance candidate.
 
 | Candidate | Compile sm_120 | Correctness | Perf measured |
 |---|---|---|---|
-| project primitives (lab) | ✅ CI | ✅ vectors | ⬜ pending hardware |
-| UltrafastSecp256k1 | ⬜ not attempted | ⬜ not attempted | ⬜ |
+| project primitives (lab) | ✅ CI | ✅ vectors | ✅ modmul256 **95.42 Gops/s** median of 5 ([lab record](../../research/cuda-lab/reports/lab-20261105T113806Z.md)); `ec-scalar-mul` bench figure invalid (zero-scalar timing bug — fixed, re-measure pending) |
+| UltrafastSecp256k1 | ⬜ not attempted | ⬜ not attempted | ⬜ (hot-path relevance: none — see verdict above) |
 | python ecdsa (oracle) | n/a | ✅ (oracle) | n/a |

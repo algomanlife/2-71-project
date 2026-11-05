@@ -1,0 +1,84 @@
+{
+  "utc": "sweep-20261105T105257Z",
+  "commit": "07a8509aa3f650caf29b00968cde4a9afc4afea8",
+  "gpu": "NVIDIA GeForce RTX 5090, 12.0, 615.71.09",
+  "cuda_toolkit": "13.4",
+  "repeat_per_grid": 5,
+  "test_vector": {
+    "range": "2000000000:3FFFFFFFFF",
+    "address": "1HBtApAFA9B2YZw3G2YKSMCtb3dVnjuNe2",
+    "slices": null
+  },
+  "termination": "early termination on known-answer match (median of per-run best-observed speeds; NOT sustained throughput)",
+  "grids": {
+    "512,64": {
+      "runs": [
+        {
+          "run": 1,
+          "grid": "512,64",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8491.9,
+          "n_speed_lines": 9,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 2,
+          "grid": "512,64",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8476.0,
+          "n_speed_lines": 9,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 3,
+          "grid": "512,64",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8516.5,
+          "n_speed_lines": 9,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 4,
+          "grid": "512,64",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8549.8,
+          "n_speed_lines": 9,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 5,
+          "grid": "512,64",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8501.1,
+          "n_speed_lines": 9,
+          "valid": true,
+          "failure_reason": null
+        }
+      ],
+      "n_runs": 5,
+      "n_valid_runs": 5,
+      "all_found_reference_key": true,
+      "median_best_mkeys_per_s": 8501.1,
+      "max_best_mkeys_per_s": 8549.8,
+      "min_best_mkeys_per_s": 8476.0,
+      "speed_spread_mkeys_per_s": 73.8,
+      "any_run_failed": false
+    }
+  },
+  "power_w": {
+    "samples": 48,
+    "avg": 65.4,
+    "max": 68.0
+  },
+  "environment": "make-info: === 2^71 project build === CUDA toolkit  : 13.4 Detected GPU  : compute 120 Architectures : 120 75 86 89 (PTX fallback: compute_89) nvcc          : -O3 -rdc=true -use_fast_math --ptxas-options=-O3 -gencode arch=compute_120,code=sm_120 -gencode arch=compute_75,code=sm_75 -gencode arch=compute_86,code=sm_86 -gencode arch=compute_89,code=sm_89 -gencode arch=compute_89,code=compute_89  -std=c++17 rdc ; ncu: ",
+  "notes": "missing speed lines are null (never zero); failed runs recorded with exit codes and excluded from statistics"
+}

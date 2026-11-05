@@ -33,7 +33,7 @@ python3 scripts/run_experiments.py --compare results/<base>.json results/<cand>.
 | `global-rw` | one coalesced 64-bit global load + one 64-bit global store (16 B) | GB/s |
 | `local-rw` | one 64-bit local-memory load + store on a 512 B/thread dynamically-indexed array (the `subp[]` access class) | Gops/s |
 | `divergent` | one warp-divergent iteration (odd lanes: mul; even lanes: add) | Gops/s |
-| `ec-scalar-mul` | one full affine scalar multiplication k·G (public scalar; one field inversion per point op — the project's setup-phase cost class) | Mops/s |
+| `ec-scalar-mul` | one full affine scalar multiplication k·G (deterministic nonzero scalar; one field inversion per point op — the project's setup-phase cost class). Erratum: before 2026-11-05 the timed buffer held zero scalars and measured the early-return path; that figure is invalid | Mops/s |
 | `launch-latency` | one empty kernel launch | µs/launch |
 
 **The 10-Gops research target** is defined on `modmul256`: sustained

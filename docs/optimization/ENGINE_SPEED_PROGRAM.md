@@ -6,7 +6,16 @@ priority** — from the observed 7.5–8.1 Gkeys/s toward >10 Gkeys/s
 must pass the correctness gates (27-test suite + `proof.py` on hardware)
 and be measured with medians before any claim.
 
-## Where the time goes (evidence-based estimate)
+## Status (2026-11-05, rig measurements)
+
+**Current measured: 9,040.3 Mkeys/s median (`512,64`, 5 reps, commit
+5c78d872) — best observed 9,681.5.** The +6.3% jump vs the same-day
+07a8509 median (8,501.1, noise floor 0.5%) is the combined effect of
+PR #39 (launch bounds) + PR #40 (hash-core forceinline); build
+provenance of that record is unresolved (see PERFORMANCE_HISTORY
+caveat ²). Remaining gap to 10 Gkeys/s: **+11%**.
+
+## Where the time goes (calibrated by the 2026-11-05 lab run)
 
 Per hashed key (B=512 typical best config):
 
@@ -16,13 +25,23 @@ Per hashed key (B=512 typical best config):
 | hash160 | ~250–400 instructions | SHA-256 (64 rounds) + RIPEMD-160 (2×80 steps), fully unrolled, register-only |
 | Local memory | ~16 B/key L1 traffic (subp) | frame analysis; **not dominant** (1024,* ≈ 128,* throughput in the sweep) |
 
-Cross-checks from the lab (hardware): int32-mix 12.65 Gops of dependent
-3–4-instr iterations (≈ near issue peak), int64-mul 4.49 Gops (64-bit
-mul path is the expensive ingredient in every modmul). **The single
-most valuable missing measurement is the lab's `modmul256` Gops on the
-5090** — it directly calibrates the EC ceiling: at 8 Gkeys/s and ~3.5
-modmul/key, the engine performs ~28 Gmodmul/s; the lab number tells us
-how close that is to the modmul ceiling. Run it first.
+Lab calibration (record
+[lab-20261105T113806Z](../../research/cuda-lab/reports/lab-20261105T113806Z.md),
+RTX 5090, commit 5c78d872, medians of 5):
+
+| Measurement | Value | What it calibrates |
+|---|---:|---|
+| `modmul256` | **95.42 Gops/s** | EC ceiling: engine at 9,040 Mkeys/s × 3.5 modmul/key ≈ 31.6 Gmodmul/s = **33% of ceiling** → EC arithmetic is NOT the wall |
+| `int32-mix` | 12.53 Gops/s dependent 3–4-instr iterations ≈ ~44 T instr/s | issue-rate ceiling: with ~4,000 instr/key (EC + hash160 + overhead) the whole-kernel ceiling is **~11 Gkeys/s (estimate, M confidence)** → the engine is already near the instruction-issue wall |
+| `local-rw` | 102.67 Gops/s | local-memory ceiling for subp[] traffic |
+| power | 64–66 W of 575 W | NOT power/thermal bound — the wall is issue rate and latency, not energy |
+| `ec-scalar-mul` | INVALID | zero-scalar early-return timing bug (fixed in this PR; number must be re-measured before any use) |
+
+**Revised verdict (measured):** launch geometry is saturated (E-S1),
+EC arithmetic has 3× ALU headroom, and the binding constraint is the
+**per-key instruction count** — dominated by hash160. The path to >10
+Gkeys/s is *reducing instructions per key* (K-2, K-3) plus removing
+latency (K-1), not more tuning of launches.
 
 ## Phase 1 — zero-code-risk experiments (rig, hours)
 
@@ -37,22 +56,22 @@ bash benchmarks/sweep/grid_sweep.sh --repeat 5 \
   --grids "512,64 512,32 512,16 256,64 256,32 128,16 1024,64 1024,32"
 ```
 
-| ID | Experiment | Rationale | Expected |
-|---|---|---|---|
-| E-S1 | extended grid/slices sweep (incl. B=16/32 variants) + clock lock | current best 8.13 @ 512,64 came from geometry alone (+4% over default); 512,128 dips 12% → strong geometry sensitivity; slices untested beyond 16 | +0–8% |
-| E-S2 | `make RDC=0` (whole-program device code) | rdc limits codegen (roadmap EXP-01) | +0–5% |
-| E-S3 | `make NVCC_EXTRA="-DTPB_MAX=512"` (and `-DLAUNCH_MIN_BLOCKS=1/4` combos) | new compile knobs; occupancy/ILP balance | unknown, cheap |
-| E-S4 | `make NVCC_EXTRA="-DMAX_BATCH_SIZE=512"` | halves the 16.7 KB frame; L1 pressure | unknown, cheap |
+(Clock lock was DENIED on the 2026-11-05 rig — medians + same-day
+back-to-back runs are the compensating protocol; ~0.5% same-day noise
+floor measured, ~5% cross-day drift observed.)
 
-Run E-S2/E-S3/E-S4 **before** E-S1's final numbers or re-run E-S1 per
-build (identical workload requirement).
+| ID | Experiment | Rationale | Expected | Result |
+|---|---|---|---|---|
+| E-S1 | extended grid/slices sweep (incl. B=16/32 variants) + clock lock | current best 8.13 @ 512,64 came from geometry alone (+4% over default); 512,128 dips 12% → strong geometry sensitivity; slices untested beyond 16 | +0–8% | **DONE** — 6 grids × 5 reps ([record](../benchmarks/data/sweep-20261105T104604Z.json)): batch ≥ 512 plateau 8,545–8,551 median (±0.1%); only small geometries lose (128,16 → 7,849). Geometry is saturated; no meaningful gain left here. |
+| E-S2 | `make RDC=0` (whole-program device code) | rdc limits codegen (roadmap EXP-01) | +0–5% | **INCONCLUSIVE** — the 11:36Z sweep pair ran on one binary (no rebuild between records) and the pre-fix records cannot prove the build. Needs a labeled back-to-back pair; `.build-flags` capture (this PR) makes future records self-proving. |
+| E-S3 | `make NVCC_EXTRA="-DTPB_MAX=512"` (and `-DLAUNCH_MIN_BLOCKS=1/4` combos) | new compile knobs; occupancy/ILP balance | unknown, cheap | not yet run (fold into the E-S2 labeled pair) |
+| E-S4 | `make NVCC_EXTRA="-DMAX_BATCH_SIZE=512"` | halves the 16.7 KB frame; L1 pressure | unknown, cheap | not yet run — **next cheapest rig experiment** |
 
 ## Phase 2 — measurement gates (rig)
 
-1. **Lab calibration**: `cd research/cuda-lab && python3
-   scripts/run_experiments.py --reps 5` — get modmul256/local-rw/divergent
-   medians. Compute the modmul headroom ratio (lab ceiling vs engine's
-   28 Gmodmul/s).
+1. **Lab calibration**: ✅ DONE 2026-11-05 (table above). modmul headroom
+   ratio = 95.42 / 31.6 ≈ **3.0×** — EC has ample ALU headroom; the
+   constraint is instruction issue.
 2. **Profiling**: unlock counters
    (`sudo modprobe nvidia NVreg_RestrictProfilingToAdminUsers=0`) →
    `bash benchmarks/profile/ncu_profile.sh` → stall reasons and pipe
@@ -62,14 +81,32 @@ build (identical workload requirement).
 ## Phase 3 — kernel work (this repository, gated on Phase 1/2 evidence)
 
 Candidates in priority order (each: isolated PR, correctness gates,
-5-rep medians, keep-or-revert):
+5-rep medians, keep-or-revert) — **reordered 2026-11-05 by the measured
+issue-rate verdict: hash is the instruction consumer, so K-2 leads:**
 
 | ID | Change | Hypothesis | Risk |
 |---|---|---|---|
+| K-2 | hash160 micro-optimizations (RIPEMD round scheduling, register allocation, shared subexpressions between the 2×80 steps) | hash ≈ dominant share of per-key instructions → single-digit % each, compounding | medium |
 | K-1 | subp[] segmentation (S=8/16 per segment, registers only) | removes the 136 high-offset LDL/STL from the hot loop | high (must reproduce identical key coverage; proof.py is the gate) |
-| K-2 | hash160 micro-optimizations (RIPEMD round scheduling, register allocation) | hash ≈ 40–50% of instructions → single-digit % each | medium |
-| K-3 | point-add restructure (share subexpressions between the ± pair) | fewer modmuls per i-step | medium-high |
+| K-3 | point-add restructure (share subexpressions between the ± pair) | fewer modmuls per i-step (EC has 3× headroom, so gains here are real but bounded) | medium-high |
 | K-4 | __reduce/ballot-based hash counting, poll cadence | minor | low |
+
+## External library evaluation (maintainer question, 2026-11-05)
+
+"Can replacing the scalar-multiplication logic — e.g. with
+[UltrafastSecp256k1](https://github.com/shrec/UltrafastSecp256k1) —
+increase search speed?" — **No, not for the search hot path**, for a
+structural reason: the engine does **not** perform scalar
+multiplications per key. The hot loop is an incremental ±(i+1)·G walk
+with batch inversion (~3.5 modmul/key); a full k·G ladder costs ~two
+orders of magnitude more. Full scalar mults happen only in the one-time
+setup phase (seconds), and the lab calibration shows the engine uses
+just 33% of the modmul ceiling — EC arithmetic is not the bottleneck;
+the hash pipeline is. UltrafastSecp256k1's self-reported ~1.5× wins are
+CPU-side ECDSA/signing vs libsecp256k1, on a different workload; its
+CUDA backend remains an evaluation candidate for the lab only
+(see [SECP256K1_COMPARISON](../research/SECP256K1_COMPARISON.md)). No
+integration into the search engine.
 
 ## Rules (binding)
 

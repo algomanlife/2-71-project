@@ -6,6 +6,37 @@ releases exist.
 
 ## [Unreleased]
 
+### First measured engine-speed results + record provenance (2026-11-05)
+
+Added
+- Rig records committed verbatim:
+  `docs/benchmarks/data/sweep-20261105T104604Z.json` (E-S1 geometry,
+  6 grids × 5 reps), `sweep-20261105T105257Z.json` (same-binary noise
+  floor), `sweep-20261105T113659Z.json` (`512,64` median **9,040.3
+  Mkeys/s** on 5c78d872, +6.3% vs same-day 07a8509 median) and the lab
+  calibration report `research/cuda-lab/reports/lab-20261105T113806Z.md`
+  (modmul256 ceiling **95.42 Gops/s** → engine at 33% of the EC
+  ceiling; instruction-issue wall est. ~11 Gkeys/s).
+- `PERFORMANCE_HISTORY.md`: first median-based entries with records,
+  same-day noise floor (0.5%) and cross-day drift (~5%) documented;
+  lab calibration section (synthetic, never mixed with Mkeys/s).
+- `ENGINE_SPEED_PROGRAM.md`: measured status (9,040.3), E-S1 verdict
+  (geometry saturated), E-S2 marked inconclusive (provenance), Phase-3
+  candidates reprioritized (K-2 hash micro-opts lead), and the
+  UltrafastSecp256k1 hot-path verdict (structural no — the engine does
+  no per-key scalar mults; ~3.5 modmul/key batch-inversion walk).
+
+Fixed
+- Lab `ec-scalar-mul` bench timed a zero-scalar early-return path
+  (buffers were memset to 0) — the published 2.64 Gops/s figure is
+  INVALID. Scalars are now deterministic nonzero 256-bit values;
+  re-measurement pending on the rig.
+- Benchmark-record provenance: `make` now writes `.build-flags`
+  (commit, rdc, full nvcc/ld flags of the actual binary) and
+  `grid_sweep.sh` captures it into each record's environment — a sweep
+  of an RDC=0 binary can no longer be mistaken for a default build
+  (root cause of today's E-S2 ambiguity).
+
 ### Engine speed program (2026-11-05, maintainer directive)
 
 Changed

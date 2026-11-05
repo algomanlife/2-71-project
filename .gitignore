@@ -16,3 +16,6 @@ cyclone_tests_results.txt
 .vscode/
 .idea/
 *.swp
+
+# Build provenance file (written by make at link time; read by grid_sweep.sh)
+.build-flags

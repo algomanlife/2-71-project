@@ -59,6 +59,7 @@ info:
 
 $(TARGET): $(OBJ)
 	$(CC) $(NVCC_FLAGS) $(CXXFLAGS) $(OBJ) -o $@ $(LDFLAGS)
+	@echo "commit=$(shell git rev-parse --short HEAD 2>/dev/null || echo unknown) rdc=$(RDC) nvcc=$(NVCC_FLAGS) $(CXXFLAGS) ldflags=$(LDFLAGS)" > .build-flags
 
 %.o: %.cu
 	$(CC) $(NVCC_FLAGS) $(CXXFLAGS) -c $< -o $@

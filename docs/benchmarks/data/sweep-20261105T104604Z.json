@@ -1,0 +1,394 @@
+{
+  "utc": "sweep-20261105T104604Z",
+  "commit": "07a8509aa3f650caf29b00968cde4a9afc4afea8",
+  "gpu": "NVIDIA GeForce RTX 5090, 12.0, 615.71.09",
+  "cuda_toolkit": "13.4",
+  "repeat_per_grid": 5,
+  "test_vector": {
+    "range": "2000000000:3FFFFFFFFF",
+    "address": "1HBtApAFA9B2YZw3G2YKSMCtb3dVnjuNe2",
+    "slices": null
+  },
+  "termination": "early termination on known-answer match (median of per-run best-observed speeds; NOT sustained throughput)",
+  "grids": {
+    "1024,32": {
+      "runs": [
+        {
+          "run": 1,
+          "grid": "1024,32",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8541.5,
+          "n_speed_lines": 9,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 2,
+          "grid": "1024,32",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8549.0,
+          "n_speed_lines": 9,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 3,
+          "grid": "1024,32",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8547.4,
+          "n_speed_lines": 9,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 4,
+          "grid": "1024,32",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8552.7,
+          "n_speed_lines": 9,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 5,
+          "grid": "1024,32",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8543.4,
+          "n_speed_lines": 9,
+          "valid": true,
+          "failure_reason": null
+        }
+      ],
+      "n_runs": 5,
+      "n_valid_runs": 5,
+      "all_found_reference_key": true,
+      "median_best_mkeys_per_s": 8547.4,
+      "max_best_mkeys_per_s": 8552.7,
+      "min_best_mkeys_per_s": 8541.5,
+      "speed_spread_mkeys_per_s": 11.2,
+      "any_run_failed": false
+    },
+    "128,16": {
+      "runs": [
+        {
+          "run": 1,
+          "grid": "128,16",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 7856.1,
+          "n_speed_lines": 16,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 2,
+          "grid": "128,16",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 7848.8,
+          "n_speed_lines": 16,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 3,
+          "grid": "128,16",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 7836.9,
+          "n_speed_lines": 16,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 4,
+          "grid": "128,16",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 7511.3,
+          "n_speed_lines": 16,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 5,
+          "grid": "128,16",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 7850.2,
+          "n_speed_lines": 16,
+          "valid": true,
+          "failure_reason": null
+        }
+      ],
+      "n_runs": 5,
+      "n_valid_runs": 5,
+      "all_found_reference_key": true,
+      "median_best_mkeys_per_s": 7848.8,
+      "max_best_mkeys_per_s": 7856.1,
+      "min_best_mkeys_per_s": 7511.3,
+      "speed_spread_mkeys_per_s": 344.8,
+      "any_run_failed": false
+    },
+    "256,32": {
+      "runs": [
+        {
+          "run": 1,
+          "grid": "256,32",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 7980.0,
+          "n_speed_lines": 13,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 2,
+          "grid": "256,32",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8470.2,
+          "n_speed_lines": 13,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 3,
+          "grid": "256,32",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8289.9,
+          "n_speed_lines": 13,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 4,
+          "grid": "256,32",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8312.3,
+          "n_speed_lines": 13,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 5,
+          "grid": "256,32",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8068.7,
+          "n_speed_lines": 13,
+          "valid": true,
+          "failure_reason": null
+        }
+      ],
+      "n_runs": 5,
+      "n_valid_runs": 5,
+      "all_found_reference_key": true,
+      "median_best_mkeys_per_s": 8289.9,
+      "max_best_mkeys_per_s": 8470.2,
+      "min_best_mkeys_per_s": 7980.0,
+      "speed_spread_mkeys_per_s": 490.2,
+      "any_run_failed": false
+    },
+    "512,16": {
+      "runs": [
+        {
+          "run": 1,
+          "grid": "512,16",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8550.8,
+          "n_speed_lines": 15,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 2,
+          "grid": "512,16",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8535.1,
+          "n_speed_lines": 15,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 3,
+          "grid": "512,16",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8523.4,
+          "n_speed_lines": 15,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 4,
+          "grid": "512,16",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8550.2,
+          "n_speed_lines": 15,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 5,
+          "grid": "512,16",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8544.9,
+          "n_speed_lines": 15,
+          "valid": true,
+          "failure_reason": null
+        }
+      ],
+      "n_runs": 5,
+      "n_valid_runs": 5,
+      "all_found_reference_key": true,
+      "median_best_mkeys_per_s": 8544.9,
+      "max_best_mkeys_per_s": 8550.8,
+      "min_best_mkeys_per_s": 8523.4,
+      "speed_spread_mkeys_per_s": 27.4,
+      "any_run_failed": false
+    },
+    "512,32": {
+      "runs": [
+        {
+          "run": 1,
+          "grid": "512,32",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8550.4,
+          "n_speed_lines": 13,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 2,
+          "grid": "512,32",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8551.2,
+          "n_speed_lines": 13,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 3,
+          "grid": "512,32",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8556.1,
+          "n_speed_lines": 13,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 4,
+          "grid": "512,32",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8537.3,
+          "n_speed_lines": 13,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 5,
+          "grid": "512,32",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8552.3,
+          "n_speed_lines": 13,
+          "valid": true,
+          "failure_reason": null
+        }
+      ],
+      "n_runs": 5,
+      "n_valid_runs": 5,
+      "all_found_reference_key": true,
+      "median_best_mkeys_per_s": 8551.2,
+      "max_best_mkeys_per_s": 8556.1,
+      "min_best_mkeys_per_s": 8537.3,
+      "speed_spread_mkeys_per_s": 18.8,
+      "any_run_failed": false
+    },
+    "512,64": {
+      "runs": [
+        {
+          "run": 1,
+          "grid": "512,64",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8525.4,
+          "n_speed_lines": 8,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 2,
+          "grid": "512,64",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8552.5,
+          "n_speed_lines": 9,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 3,
+          "grid": "512,64",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8550.8,
+          "n_speed_lines": 9,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 4,
+          "grid": "512,64",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8546.0,
+          "n_speed_lines": 9,
+          "valid": true,
+          "failure_reason": null
+        },
+        {
+          "run": 5,
+          "grid": "512,64",
+          "exit_code": 0,
+          "found_reference_key": true,
+          "best_mkeys_per_s": 8545.3,
+          "n_speed_lines": 9,
+          "valid": true,
+          "failure_reason": null
+        }
+      ],
+      "n_runs": 5,
+      "n_valid_runs": 5,
+      "all_found_reference_key": true,
+      "median_best_mkeys_per_s": 8546.0,
+      "max_best_mkeys_per_s": 8552.5,
+      "min_best_mkeys_per_s": 8525.4,
+      "speed_spread_mkeys_per_s": 27.1,
+      "any_run_failed": false
+    }
+  },
+  "power_w": {
+    "samples": 397,
+    "avg": 66.0,
+    "max": 68.0
+  },
+  "environment": "make-info: === 2^71 project build === CUDA toolkit  : 13.4 Detected GPU  : compute 120 Architectures : 120 75 86 89 (PTX fallback: compute_89) nvcc          : -O3 -rdc=true -use_fast_math --ptxas-options=-O3 -gencode arch=compute_120,code=sm_120 -gencode arch=compute_75,code=sm_75 -gencode arch=compute_86,code=sm_86 -gencode arch=compute_89,code=sm_89 -gencode arch=compute_89,code=compute_89  -std=c++17 rdc ; ncu: ",
+  "notes": "missing speed lines are null (never zero); failed runs recorded with exit codes and excluded from statistics"
+}

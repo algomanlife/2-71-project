@@ -115,15 +115,27 @@ double run_warm(const char* name, int blocks, int threads, int iters,
         CK(cudaMalloc(&d_sink, scratch_bytes));
         CK(cudaMemset(d_sink, 0, scratch_bytes));
     }
-    // ec-scalar-mul buffers (allocated before any timing; scalar 0 = fast
-    // identity path, deterministic)
+    // ec-scalar-mul buffers (allocated before any timing).
+    // ERRATUM (fixed 2026-11-05): these buffers used to be memset to 0 —
+    // a zero scalar takes the early-return path in scalarMulBaseAffine, so
+    // the timed "throughput" measured launch + early-out, not real ladders
+    // (the ec-scalar-mul figure in reports/lab-20261105T113806Z.md is
+    // invalid for this reason). Scalars are now deterministic NONZERO
+    // 256-bit values: low limb = thread index + 1, top limb = fixed odd
+    // constant.
     uint64_t *d_ec_s = nullptr, *d_ec_x = nullptr, *d_ec_y = nullptr;
     const bool is_ec = !strcmp(name, "ec-scalar-mul");
     if (is_ec) {
         CK(cudaMalloc(&d_ec_s, total_threads * 32));
         CK(cudaMalloc(&d_ec_x, total_threads * 32));
         CK(cudaMalloc(&d_ec_y, total_threads * 32));
-        CK(cudaMemset(d_ec_s, 0, total_threads * 32));
+        std::vector<uint64_t> h_s(total_threads * 4, 0ULL);
+        for (size_t i = 0; i < total_threads; ++i) {
+            h_s[i * 4 + 0] = (uint64_t)(i + 1);
+            h_s[i * 4 + 3] = 0xdeadbeefcafe0123ULL;
+        }
+        CK(cudaMemcpy(d_ec_s, h_s.data(), total_threads * 32,
+                      cudaMemcpyHostToDevice));
     }
 
     cudaEvent_t t0, t1;

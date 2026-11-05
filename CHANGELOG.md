@@ -6,22 +6,6 @@ releases exist.
 
 ## [Unreleased]
 
-### K-2b slice 1: explicit byte-permute bswap32 (2026-11-05)
-
-Changed
-- `CUDAHash.cuh`: `bswap32` now uses `__byte_perm(x, 0, 0x0123)` — one
-  PRMT-class instruction per word instead of the 4-AND/shift + 3-OR
-  sequence (compiler pattern-matching not guaranteed). Hot path: the 8
-  words of `RIPEMD160_from_SHA256_state` per hashed key. Verified
-  bit-for-bit on host against hashlib + the pure-python RIPEMD oracle
-  (full hash160 pipeline). Rig medians decide accept/revert vs the
-  9,672.7 K-2a median (noise floor 0.5%). Honest expectation: small —
-  if nvcc already pattern-matched the old form, gain is ~0; the point
-  is guaranteeing the single-instruction form.
-- Next slice (K-2b slice 2, prepared): `pack_be4` message-assembly →
-  two PRMT per SHA word in `SHA256_33_from_limbs` (9 words/key),
-  needs a dedicated limbs-path host test first.
-
 ### K-2a ACCEPTED: +7.4% measured — first kernel-level optimization (2026-11-05)
 
 - Rig verdict (record `sweep-20261105T133135Z.json`, self-proving via

@@ -26,6 +26,24 @@ Added
 
 No source changes; documentation only.
 
+### Phase 3 — benchmark validity verification (2026-11-05)
+
+Fixed
+- Python `ResourceWarning` (unclosed file handles) in benchmark tooling:
+  every read/write now uses with-statements; verified with
+  `-W error::ResourceWarning` (no test weakened).
+
+Added
+- Lab validity gate: `cuda-lab-bench --verify/--verify-only` re-runs each
+  bench kernel writing final per-thread values and cross-checks them
+  bit-for-bit against exact host references (DCE/loop-elision/empty
+  timing would diverge). Runner aborts before timing on failure; JSON
+  records carry `verified` + theoretical reference points (attribute-based
+  clocks — cudaDeviceProp clock fields were removed in CUDA 13).
+- `docs/research/BENCHMARK_VALIDATION.md`: audit of the first RTX 5090
+  lab measurements (plausible, pending verification on hardware).
+
+
 ### CUDA research lab & Phase-2 research docs (2026-11-05)
 
 Added

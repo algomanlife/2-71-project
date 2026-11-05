@@ -84,6 +84,34 @@ def run_suite(benches, reps, extra_args):
     return records
 
 
+def verify_benches(benches):
+    """Phase-3 validity gate: each bench's executed work is cross-checked
+    against the host reference (--verify-only). A false result means the
+    benchmark's reported numbers would NOT represent executed workloads —
+    abort before any timing."""
+    if not os.path.isfile(BIN):
+        sys.exit("cuda-lab-bench not built")
+    verified = {}
+    for b in benches:
+        r = sh([BIN, "--bench", b, "--verify-only", "--json"])
+        if r.returncode != 0:
+            sys.exit(f"verification run failed for {b} (exit {r.returncode}):\n{r.stderr}")
+        rec = None
+        for line in r.stdout.splitlines():
+            try:
+                obj = json.loads(line)
+                if obj.get("bench") == b:
+                    rec = obj
+            except json.JSONDecodeError:
+                continue
+        if rec is None or not rec.get("verified"):
+            sys.exit(f"VERIFICATION FAILED for {b}: reported timings would "
+                     f"NOT represent executed workloads — aborting")
+        verified[b] = True
+        print(f"  verify {b}: PASS (matches host reference)")
+    return verified
+
+
 def run_suite_full(benches, reps):
     """Run each bench `reps` times as separate invocations for genuine
     per-repetition timing samples."""
@@ -208,12 +236,16 @@ def main():
 
     env = capture_env()
     print(f"lab run: {env['gpu']} cuda={env['cuda_toolkit']} commit={env['commit']}")
+    verified = verify_benches(benches)
     records = run_suite_full(benches, args.reps)
+    for name in records:
+        records[name]["verified"] = verified.get(name, False)
     record = {"utc": env["utc"], "gpu": env["gpu"],
               "cuda_toolkit": env["cuda_toolkit"], "commit": env["commit"],
               "reps": args.reps, "benches": records,
-              "notes": "median of repetitions; failed runs abort; single "
-                       "measurements are never reported"}
+              "notes": "median of repetitions; every bench verified against "
+                       "the host reference before timing; failed runs abort; "
+                       "single measurements are never reported"}
     write_outputs(record)
 
 

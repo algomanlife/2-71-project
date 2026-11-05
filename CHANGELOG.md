@@ -6,6 +6,20 @@ releases exist.
 
 ## [Unreleased]
 
+### K-2b slice 2: message assembly via byte-permute (2026-11-05)
+
+Changed
+- `CUDAHash.cuh` `SHA256_33_from_limbs`: the 9 message words of the
+  hot-path SHA-256 block are now built with single `__byte_perm`
+  (PRMT-class) instructions instead of `pack_be4`'s 4-byte-extract +
+  3-OR sequence per word (~10 instructions → 1 per word; ~70-80
+  instructions removed per hashed key). Unlike the reverted slice 1
+  (already-optimized bswap), this removes real instruction count.
+- Verified bit-for-bit on host against hashlib SHA-256 + the
+  pure-python RIPEMD-160 oracle on the limbs path (the host harness
+  caught a limb-ordering bug in the TEST itself first — the CUDA code
+  was correct). Rig medians decide accept/revert vs the K-2a class
+  (~9,627–9,673 median; accept > +0.5%).
 ### Docs: honest sustained-speed status + address-paste troubleshooting (2026-11-05)
 
 - README: sustained speed is **not stable on this rig** — 8.5-9

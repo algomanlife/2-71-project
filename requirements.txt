@@ -1,0 +1,8 @@
+# 2^71 project — Python dependencies for validation & benchmark tooling
+# Install into a virtual environment (scripts/setup.sh does this):
+#   python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+#
+# ecdsa: independent secp256k1 reference implementation used by the test
+# suite (proof.py, tests/). Version pinned for reproducibility; 0.19.2 is
+# the version validated on the RTX 5090 test rig (Ubuntu 24.04, Python 3.12).
+ecdsa==0.19.2

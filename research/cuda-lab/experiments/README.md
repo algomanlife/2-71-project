@@ -15,10 +15,10 @@ correctness gates passing and the noise guard satisfied.
   reduction may improve synthetic modmul256 throughput. Confidence low —
   SASS lowering decides; must be measured.
 - **Correctness gates (mandatory, run before any timing):**
-  G1 chain vs public vectors (A·B, A·B⁸, A·B⁶⁴ mod p); G2
-  device-vs-device cross-check: foldmul and baseline `_ModMult` produce
-  identical per-thread results for gid-mixed starts (semantics
-  replicates the baseline's non-canonical mod-2^256 fold exactly).
+  G1 — foldmul chain vs public vectors (A·B, A·B⁸, A·B⁶⁴ mod p);
+  G2 — the REAL baseline kernel's vector check (modmul_check_kernel from
+  src/kernels.cu, same binary): both variants are validated against the
+  same independent ground truth before any timing is reported.
 - **Methodology:** identical workload (blocks/threads/iters) for both
   kernels; configurable warmup (default 1000 — steady-state intent);
   CUDA-event timing; ≥5 repetitions; medians + stdev; verdict only when

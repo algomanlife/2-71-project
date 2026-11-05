@@ -144,8 +144,8 @@ known-answer runs, medians of 5 reps):
 
 | | RTX 5090 (170 SM) | RTX PRO 6000 Blackwell (188 SM) |
 |---|---:|---:|
-| Median of 5 reps | **9,006–9,048 Mkeys/s** (`512,64`) | — |
-| Best observed | 9,681.5 Mkeys/s (`512,64`) | **7,452.4 Mkeys/s** (`128,64`) |
+| Median of 5 reps | **9,672.7 Mkeys/s** (`512,64`, K-2a) | — |
+| Best observed | 9,811.9 Mkeys/s (`512,64`, K-2a) | **7,452.4 Mkeys/s** (`128,64`) |
 | Initial baseline (best observed) | 7,800.4 Mkeys/s | 7,074.8 Mkeys/s |
 | 12/12 grids found reference key | ✅ | ✅ |
 
@@ -158,6 +158,13 @@ test vector in the original historical log (default config) ran at
 Sustained full-run averages sit ~5–6% below the sweep's best-observed
 peaks; both metrics are reported, never mixed
 ([PERFORMANCE_HISTORY](docs/benchmarks/PERFORMANCE_HISTORY.md)).
+
+**First kernel-level optimization accepted (K-2a, 2026-11-05):** SHA-256
+round constants folded into instruction immediates + single-instruction
+RIPEMD rotations → **+7.4% measured** (median 9,672.7 vs 9,006.7
+same-day baseline, >14× the noise floor); the worst K-2a run beats
+every prior median. Record:
+[data/sweep-20261105T133135Z.json](docs/benchmarks/data/sweep-20261105T133135Z.json).
 
 Do not infer universal GPU ranking from this single series; see the
 methodology and limitations in
@@ -276,9 +283,10 @@ inversions for multiplications.
 
 - **[Engine speed program (top priority)](docs/optimization/ENGINE_SPEED_PROGRAM.md)** —
   measured path toward >10 Gkeys/s on the RTX 5090. **Phase 1 closed**
-  (all zero-risk levers measured null); current: ~9.0 Gkeys/s median,
-  real-run sustained 8,534 Mkeys/s; next: kernel instruction-count work
-  (K-2 hash160 → K-1 subp segmentation → K-3 point-add restructure).
+  (all zero-risk levers measured null); current: **9,672.7 Mkeys/s
+  median** after K-2a (+7.4%, accepted); real-run sustained 8,534
+  Mkeys/s; next: K-2b (RIPEMD round scheduling) → K-1 subp segmentation
+  → K-3 point-add restructure (~3.4% median left to the 10 Gkeys/s goal).
 - [Stack-frame investigation](docs/research/STACK_FRAME_INVESTIGATION.md) —
   the 16.7 KB kernel frame is fully attributed (`subp[]` = 16·B); grid
   `1024,*` performing comparably to `128,*` shows frame size alone does
@@ -329,7 +337,7 @@ inversions for multiplications.
 | 2 | CUDA 13 modernization + validation infrastructure | ✅ |
 | 3 | Foundational optimization & performance research | ✅ |
 | 4 | Hardware validation & benchmarking | ✅ medians, real-run, lab calibration published |
-| 5 | Engine speed >10 Gkeys/s program | 🔄 Phase 1 closed (levers null); K-2 kernel work active |
+| 5 | Engine speed >10 Gkeys/s program | 🔄 K-2a accepted (+7.4% → 9,672.7 median); K-2b/K-1 next |
 
 ## 15. Changelog
 

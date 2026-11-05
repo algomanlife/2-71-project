@@ -6,6 +6,19 @@ releases exist.
 
 ## [Unreleased]
 
+### K-2a ACCEPTED: +7.4% measured — first kernel-level optimization (2026-11-05)
+
+- Rig verdict (record `sweep-20261105T133135Z.json`, self-proving via
+  `.build-flags`): `512,64` median **9,672.7 Mkeys/s** (runs
+  9,529.6–9,811.9) vs 9,006.7 same-day baseline = **+7.4%**, >14× the
+  0.5% noise floor. The worst K-2a run beats every prior median; power
+  62.3 W (was ~64 W) — consistent with the removed instructions.
+- Correctness: 33/33 tests, 5/5 sweep runs found the reference key,
+  host bit-exactness vs hashlib + the pure-python RIPEMD oracle.
+- PERFORMANCE_HISTORY: first Accepted kernel-level entry + record;
+  README §7/§12/§14 and the speed-progression chart updated
+  (9,672.7 bar added; goal gap now +3.4% median).
+
 ### K-2a: hash160 instruction cuts, first slice (2026-11-05)
 
 Changed

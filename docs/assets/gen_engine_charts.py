@@ -36,7 +36,8 @@ bars = [
     ("grid config 512,64\n(geometry only)", 8133.0, C_DIM,  "best observed"),
     ("REAL SEARCH RUN\n512,64 · full 22 s", 8534.1, C_GREEN, "sustained"),
     ("median of 5 reps\n#39+#40 code", 9040.3, C_A, "median"),
-    ("best observed\nsame build", 9681.5, C_A, "best observed"),
+    ("K-2a median\nhash instr. cuts", 9672.7, C_A, "median"),
+    ("best observed\nK-2a build", 9811.9, C_A, "best observed"),
 ]
 
 parts.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" role="img" aria-label="Engine speed progression on RTX 5090, 2026-11-05">')
@@ -64,12 +65,12 @@ parts.append(f'<text x="{ML+6}" y="{y(10000)-8:.1f}" font-family="{FONT2}" font-
 parts.append(f'<line x1="{ML}" y1="{MT}" x2="{ML}" y2="{MT+PH}" stroke="{GRID}" stroke-width="1"/>')
 
 gw = PW / len(bars)
-bw = 74
+bw = 64
 for i, (label, v, col, mclass) in enumerate(bars):
     cx = ML + gw * (i + 0.5)
     xa = cx - bw / 2
     hh = (MT + PH) - y(v)
-    stroke = ' stroke="#ffffff" stroke-width="1.5"' if v == 9681.5 else ''
+    stroke = ' stroke="#ffffff" stroke-width="1.5"' if v == 9811.9 else ''
     parts.append(f'<rect x="{xa:.1f}" y="{y(v):.1f}" width="{bw}" height="{hh:.1f}" rx="3" fill="{col}"{stroke}></rect>')
     parts.append(f'<text x="{cx:.1f}" y="{y(v)-6:.1f}" text-anchor="middle" font-family="{FONT}" font-size="11" fill="{TXT}">{v:,.1f}</text>')
     l1, l2 = label.split("\n")
@@ -77,7 +78,7 @@ for i, (label, v, col, mclass) in enumerate(bars):
     parts.append(f'<text x="{cx:.1f}" y="{MT+PH+30:.1f}" text-anchor="middle" font-family="{FONT}" font-size="9" fill="{SUB}">{l2}</text>')
 
 parts.append(f'<text x="{W/2}" y="{H-28}" text-anchor="middle" font-family="{FONT2}" font-size="10" fill="{SUB}">metric classes are reported separately and never mixed · white outline = current best</text>')
-parts.append(f'<text x="{W/2}" y="{H-12}" text-anchor="middle" font-family="{FONT2}" font-size="10" fill="{SUB}">+19.8% real-run vs historical (7,128.4 same test vector) · +6.3% median code gain (noise floor 0.5%)</text>')
+parts.append(f'<text x="{W/2}" y="{H-12}" text-anchor="middle" font-family="{FONT2}" font-size="10" fill="{SUB}">real-run vs historical (7,128.4 same vector): +19.8% · code gains: +6.3% (#39+#40) then +7.4% (K-2a, hash instruction cuts) · noise floor 0.5%</text>')
 parts.append('</svg>')
 open('docs/assets/speed-progression.svg', 'w').write('\n'.join(parts))
 print("written: speed-progression.svg")

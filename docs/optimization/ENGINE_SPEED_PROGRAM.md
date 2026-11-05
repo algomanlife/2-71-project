@@ -8,17 +8,16 @@ and be measured with medians before any claim.
 
 ## Status (2026-11-05, rig measurements — Phase 1 CLOSED)
 
-**Current measured: ~9,000–9,050 Mkeys/s median (`512,64`, 5 reps,
-commit 5c78d872; four independent records: 9,048.0 / 9,040.3 / 9,006.7
-default-build legs + 9,041.0 RDC=0) — best observed 9,681.5.** The
-+6.3% jump vs the same-day 07a8509 median (8,501.1) is attributed to
-the #39+#40 code changes (launch bounds + hash-core forceinline); the
-E-S2 labeled pair proved `RDC=0` is at parity, resolving the earlier
-provenance caveat. **All Phase-1 zero-risk levers are now measured
-NULL** (E-S1 saturated, E-S2 +0.38% < noise, E-S4 +0.44% < noise):
-no build knob or launch-geometry setting moves this kernel. Remaining
-gap to 10 Gkeys/s: **+11% — must come from kernel work (K-1..K-3),
-starting with K-2 (hash160 instruction count).**
+**Current measured: 9,672.7 Mkeys/s median (`512,64`, 5 reps, commit
+886548d) — best observed 9,811.9.** Two accepted code gains so far:
++6.3% from #39+#40 (launch bounds + hash forceinline) and **+7.4% from
+K-2a** (hash160 instruction cuts: SHA-256 K/IV immediates +
+funnelshift rotations — median 9,672.7 vs 9,006.7 same-day baseline;
+the worst K-2a run, 9,529.6, beats every prior median; power dropped
+to 62.3 W). All Phase-1 zero-risk levers are measured NULL (E-S1
+saturated, E-S2 +0.38% < noise, E-S4 +0.44% < noise). Remaining gap to
+10 Gkeys/s: **+3.4% median — next slices: K-2b (RIPEMD round
+scheduling), then K-1 (subp segmentation), then K-3 (point-add).**
 
 Reproducibility anchors: same-binary drift 0.09% (T113559Z vs
 T113659Z); same-day cross-record ~0.5% (noise floor); lab repeat

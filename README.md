@@ -233,6 +233,8 @@ inversions for multiplications.
   the 16.7 KB kernel frame is fully attributed (`subp[]` = 16·B); grid
   `1024,*` performing comparably to `128,*` shows frame size alone does
   not determine throughput; runtime profiling (E1) is the arbiter.
+- **[Engine speed program (top priority)](docs/optimization/ENGINE_SPEED_PROGRAM.md)** —
+  measured path toward >10 Gkeys/s on the RTX 5090.
 - [Performance baseline & bottleneck classification](docs/optimization/PERFORMANCE_BASELINE.md)
 - [Optimization experiment log](docs/optimization/EXPERIMENTS.md) —
   one mechanism per experiment, medians with variance, keep-or-revert

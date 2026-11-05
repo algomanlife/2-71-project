@@ -40,6 +40,17 @@ __device__ __forceinline__ bool warp_found_ready(const int* __restrict__ d_found
 #ifndef MAX_BATCH_SIZE
 #define MAX_BATCH_SIZE 1024
 #endif
+// Launch-geometry compile-time knobs (engine-speed experiments; defaults
+// reproduce the historical baseline exactly):
+//   TPB_MAX           — max threads per block for the search kernel
+//   LAUNCH_MIN_BLOCKS — __launch_bounds__ min blocks per SM (register cap)
+// Variants: make NVCC_EXTRA="-DTPB_MAX=512 -DLAUNCH_MIN_BLOCKS=2"
+#ifndef TPB_MAX
+#define TPB_MAX 256
+#endif
+#ifndef LAUNCH_MIN_BLOCKS
+#define LAUNCH_MIN_BLOCKS 2
+#endif
 #ifndef WARP_SIZE
 #define WARP_SIZE 32
 #endif
@@ -49,7 +60,7 @@ __constant__ uint64_t c_Gy[(MAX_BATCH_SIZE/2) * 4];
 __constant__ uint64_t c_Jx[4];
 __constant__ uint64_t c_Jy[4];
 
-__launch_bounds__(256, 2)
+__launch_bounds__(TPB_MAX, LAUNCH_MIN_BLOCKS)
 __global__ void kernel_point_add_and_check_oneinv(
     const uint64_t* __restrict__ Px,
     const uint64_t* __restrict__ Py,
@@ -556,7 +567,7 @@ int main(int argc, char** argv) {
 
     cudaDeviceSetCacheConfig(cudaFuncCachePreferL1);
 
-    int threadsPerBlock=256;
+    int threadsPerBlock = TPB_MAX;   // compile-time knob (default 256)
     if (threadsPerBlock > (int)prop.maxThreadsPerBlock) threadsPerBlock=prop.maxThreadsPerBlock;
     if (threadsPerBlock < 32) threadsPerBlock=32;
 

@@ -6,6 +6,19 @@ releases exist.
 
 ## [Unreleased]
 
+### Engine speed program (2026-11-05, maintainer directive)
+
+Changed
+- Search-engine optimization is now the project's top priority
+  (target: >10 Gkeys/s on RTX 5090 from the observed 7.5–8.1);
+  `docs/optimization/ENGINE_SPEED_PROGRAM.md` defines the measured,
+  correctness-gated program (zero-risk build/geometry experiments →
+  lab calibration + profiling → kernel candidates K-1..K-4).
+- `project_2_71.cu`: launch-geometry compile knobs `TPB_MAX` (256,
+  default) and `LAUNCH_MIN_BLOCKS` (2, default) — defaults reproduce
+  the baseline binary exactly; variants via
+  `make NVCC_EXTRA="-DTPB_MAX=512 ..."`.
+
 ### Documentation: usage, workflow, and proof reference (2026-11-05)
 
 Added

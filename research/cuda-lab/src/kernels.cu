@@ -468,7 +468,7 @@ bool verify_bench(const char* name) {
             r[0] = hostvecs::MODMUL_A[0] ^ gid_mix; r[1] = hostvecs::MODMUL_A[1];
             r[2] = hostvecs::MODMUL_A[2]; r[3] = hostvecs::MODMUL_A[3];
             for (int i = 0; i < VI; ++i)
-                host_modmul_device_semantics(r, MODMUL_B_HOST, r);
+                host_modmul_device_semantics(r, hostvecs::MODMUL_B, r);
             ok = !memcmp(h + g * 4, r, 32);
         }
         delete[] h; cudaFree(d);

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="330" viewBox="0 0 900 330" role="img" aria-label="Lab calibration: modmul ceiling versus engine usage, RTX 5090">
+<rect width="900" height="330" rx="12" fill="#0b1017"/>
+<text x="450.0" y="26" text-anchor="middle" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="15" font-weight="700" fill="#e8f1f8">Where the Ceiling Is — Lab Calibration (RTX 5090)</text>
+<text x="450.0" y="44" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" fill="#8fa3b8">secp256k1 256-bit modular multiplications per second, same unit on both bars</text>
+<rect x="30" y="86" width="520" height="26" rx="3" fill="#00d4ff" fill-opacity="0.85"></rect>
+<text x="40" y="103" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#04222b" font-weight="700">95.42 Gops/s</text>
+<text x="884" y="103" text-anchor="end" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="11" fill="#e8f1f8">modmul256 ceiling — lab bench (median of 5)</text>
+<rect x="30" y="142" width="202.2" height="26" rx="3" fill="#8a5cf6"></rect>
+<text x="40" y="159" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" fill="#120726" font-weight="700">31.6</text>
+<text x="884" y="159" text-anchor="end" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="11" fill="#e8f1f8">engine at 9,040 Mkeys/s — derived (3.5 modmul/key)</text>
+<line x1="202.2" y1="86" x2="202.2" y2="168" stroke="#8a5cf6" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="210.2" y="127.0" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="11" fill="#8a5cf6">33% of ceiling</text>
+<text x="30" y="196" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" fill="#00d4ff">EC arithmetic</text>
+<text x="160" y="196" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="10.5" fill="#8fa3b8">3.0x ALU headroom — NOT the bottleneck</text>
+<text x="30" y="220" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" fill="#00d4ff">instruction issue</text>
+<text x="160" y="220" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="10.5" fill="#8fa3b8">~4,000 instr/key vs ~44 T/s peak  →  wall ≈ 11 Gkeys/s (est.)</text>
+<text x="30" y="244" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" fill="#00d4ff">power</text>
+<text x="160" y="244" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="10.5" fill="#8fa3b8">64–66 W of 575 W — not power/thermal bound</text>
+<text x="30" y="268" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9.5" fill="#00d4ff">verdict</text>
+<text x="160" y="268" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="10.5" fill="#8fa3b8">path to >10 Gkeys/s = fewer instructions per key (hash160 first)</text>
+<text x="450.0" y="318" text-anchor="middle" font-family="ui-sans-serif, -apple-system, Segoe UI, Helvetica, Arial" font-size="9.5" fill="#8fa3b8">data: research/cuda-lab/reports/lab-20261105T113806Z.md — synthetic Gops never compared with engine Mkeys/s; only same-unit ratios are used</text>
+</svg>

@@ -112,6 +112,10 @@ jobs:
         run: |
           make clean
           make GPU_ARCH=120
+      - name: Build RDC=0 (whole-program device code — E-S2 enabler)
+        run: |
+          make clean
+          make RDC=0 GPU_ARCH=120 SM_ARCHS="120"
       - name: Register/spill report (audit H2 evidence)
         run: make ptxas-info
       - name: Verify executable was produced

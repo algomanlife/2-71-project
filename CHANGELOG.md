@@ -6,6 +6,31 @@ releases exist.
 
 ## [Unreleased]
 
+### Phase-1 closed: E-S2/E-S4 measured null; real-run result registered (2026-11-05)
+
+Added
+- Rig records committed verbatim: same-binary reproducibility pair
+  (`sweep-20261105T113559Z.json`, 9,048.0 median — 0.09% drift),
+  the labeled E-S2 pair (RDC=0 9,041.0 vs default 9,006.7) and E-S4
+  (`-DMAX_BATCH_SIZE=512`, 9,046.0), plus the lab repeat
+  (`lab-20261105T121316Z.md`, all benches within 0.3%).
+- Real search run registered: `data/execution-log-2026-11-05c.txt`
+  (manual, `512,64`, second historical test vector) — **8,534.1
+  Mkeys/s sustained** over the full 22 s run vs 7,128.4 for the same
+  vector in the historical log = **+19.8%**. README performance
+  section updated with current medians (9,006–9,048) and the
+  sustained-vs-best-observed distinction.
+
+Measured verdicts (Phase 1 closed — all zero-risk levers null)
+- E-S2 `RDC=0`: +0.38% vs default — below the 0.5% noise floor →
+  no effect; build option only.
+- E-S4 `MAX_BATCH_SIZE=512`: +0.44% — below noise → no effect;
+  local-memory frame size is not the constraint.
+- Provenance caveat ² resolved (E-S2 parity): the +6.3% of #39+#40
+  stands regardless of which build the 11:36Z pair used.
+- Next per ENGINE_SPEED_PROGRAM: kernel work K-2 (hash160 instruction
+  count) → K-1 (subp segmentation) → K-3 (point-add restructure).
+
 ### First measured engine-speed results + record provenance (2026-11-05)
 
 Added

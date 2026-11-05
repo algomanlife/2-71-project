@@ -76,28 +76,33 @@ line prints Count and Progress computed from one read;
 printed pair agrees to print precision. The found banner's
 `Keys hashed` uses a final read of the same counter.
 
-## 5. The observation, quantitatively [MEASURED] + analysis
+## 5. The observation, quantitatively — CORRECTED [MEASURED]
 
-For the canonical vector (the only range/target pair with published
-multi-config evidence):
+**Correction (2026-11-05, later evidence):** this section originally
+attributed the observed 6.89% found-progress to the target's *global
+position* (6.936%). That explanation was a coincidence and is wrong as
+a mechanism. The verified law (two independent historical runs,
+`TRAVERSAL_ORDER_ANALYSIS.md`): the fraction of the range hashed at
+discovery equals the target key's **offset within its own thread's
+interval** divided by `per_thread` — a deterministic function of the
+grid geometry, not of the key's global position. Run 2 of the later
+evidence disproves the global-position model directly (key at global
+52.6%, discovered at 28.8% of the range hashed — predicted 28.76% by
+the offset law).
 
-- Target position in range: key `0x22382FACD0` lies at global position
-  9,532,583,120 of 137,438,953,472 keys = **6.936%**.
-- Config A printed progress at found: **6.89%** — equal to the target's
-  global position to within 0.05 points. This is exactly what the
-  mechanics predict (uniform thread progress ⇒ discovery at ≈ the
-  target's global position).
-- Config B at **7.83%** with no match **at the observation point**: a
-  mid-run snapshot of a run that had not yet reached its (different)
-  discovery point. Given the ~5.7-points/s print cadence and the
-  deterministic per-grid traversal offsets (thread count halves, batch
-  size quadruples, window width ±64 → ±256, wave structure changes),
-  a sub-second difference in discovery timing between A and B is fully
-  expected. B's observed snapshot is ~0.9 points past A's discovery
-  point — within the explained variation.
+- Config A vs B differ in `threadsTotal` (4.19 M vs 2.10 M for the
+  canonical 2^37 range), so the same key lands at different offsets in
+  different partitions: predicted found-at 35.0% (A) vs 67.5% (B).
+- Config B at **7.83%** with no match **at the observation point** was a
+  mid-run snapshot before that grid's discovery point (plus up to ~5.7
+  points of 1 Hz print staleness).
+- The 6.89% figure from the original observation could not be
+  reproduced for the canonical vector under grid 128,128 (predicted
+  35.0%); it most plausibly came from a different range/target than
+  assumed here, and pre-dated exact `Keys hashed` reporting.
 
-**What the 7.83% snapshot is NOT:** it is not a completed run. A
-completed exhaustive run without a match exits `1` with
+**What a snapshot is NOT:** it is not a completed run. A completed
+exhaustive run without a match exits `1` with
 `KEY NOT FOUND (exhaustive)` — that, with the key provably inside the
 range, would be the signature of a real bug. No such evidence exists.
 

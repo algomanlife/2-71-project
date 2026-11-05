@@ -44,32 +44,42 @@ __device__ __forceinline__ uint32_t smallS1(uint32_t x){ return ror32(x,17) ^ ro
 __device__ __forceinline__ uint32_t Ch (uint32_t x,uint32_t y,uint32_t z){ return (x & y) ^ (~x & z); }
 __device__ __forceinline__ uint32_t Maj(uint32_t x,uint32_t y,uint32_t z){ return (x & y) | (x & z) | (y & z); }
 
-// K-2a (engine speed program): K/IV are constexpr, not __constant__
-// memory. With the 64-round loop fully unrolled every K[t] access has
-// a compile-time index, so the values fold into instruction immediates
-// — this removes up to 64 constant-memory loads (LDC) per hashed key,
-// each of which also sat in the T1 dependency chain. Values unchanged
-// (bit-for-bit identical output; correctness gates arbitrate).
-static constexpr uint32_t K[64] = {
-    0x428A2F98,0x71374491,0xB5C0FBCF,0xE9B5DBA5,0x3956C25B,0x59F111F1,0x923F82A4,0xAB1C5ED5,
-    0xD807AA98,0x12835B01,0x243185BE,0x550C7DC3,0x72BE5D74,0x80DEB1FE,0x9BDC06A7,0xC19BF174,
-    0xE49B69C1,0xEFBE4786,0x0FC19DC6,0x240CA1CC,0x2DE92C6F,0x4A7484AA,0x5CB0A9DC,0x76F988DA,
-    0x983E5152,0xA831C66D,0xB00327C8,0xBF597FC7,0xC6E00BF3,0xD5A79147,0x06CA6351,0x14292967,
-    0x27B70A85,0x2E1B2138,0x4D2C6DFC,0x53380D13,0x650A7354,0x766A0ABB,0x81C2C92E,0x92722C85,
-    0xA2BFE8A1,0xA81A664B,0xC24B8B70,0xC76C51A3,0xD192E819,0xD6990624,0xF40E3585,0x106AA070,
-    0x19A4C116,0x1E376C08,0x2748774C,0x34B0BCB5,0x391C0CB3,0x4ED8AA4A,0x5B9CCA4F,0x682E6FF3,
-    0x748F82EE,0x78A5636F,0x84C87814,0x8CC70208,0x90BEFFFA,0xA4506CEB,0xBEF9A3F7,0xC67178F2
-};
+// K-2a (engine speed program): the 64 SHA-256 round constants and the
+// 8 IV words are LITERAL macro arguments below (instruction immediates),
+// not __constant__-memory arrays. With literal round indices every
+// constant and every w[] index is a compile-time constant: the values
+// fold into the unrolled code and up to 64 constant-memory loads (LDC)
+// per hashed key disappear — each of which also sat in the T1
+// dependency chain. Generated mechanically from the FIPS 180-4 table
+// (same pattern as the RIPEMD-160 round macros in this file); values
+// are identical bit-for-bit — the correctness gates arbitrate.
 
-static constexpr uint32_t IV[8] = {
-    0x6a09e667ul,0xbb67ae85ul,0x3c6ef372ul,0xa54ff53aul,
-    0x510e527ful,0x9b05688cul,0x1f83d9abul,0x5be0cd19ul
-};
+#define SHA_ROUND_PLAIN(t, k) \
+    { \
+        uint32_t T1_ = h + bigS1(e) + Ch(e, f, g) + (k) + w[(t) & 15]; \
+        uint32_t T2_ = bigS0(a) + Maj(a, b, c); \
+        h = g; g = f; f = e; e = d + T1_; \
+        d = c; c = b; b = a; a = T1_ + T2_; \
+    }
+
+#define SHA_ROUND_SCHED(t, k) \
+    { \
+        uint32_t s0_ = smallS0(w[((t) + 1) & 15]); \
+        uint32_t s1_ = smallS1(w[((t) + 14) & 15]); \
+        w[(t) & 15] = w[(t) & 15] + s1_ + w[((t) + 9) & 15] + s0_; \
+        uint32_t T1_ = h + bigS1(e) + Ch(e, f, g) + (k) + w[(t) & 15]; \
+        uint32_t T2_ = bigS0(a) + Maj(a, b, c); \
+        h = g; g = f; f = e; e = d + T1_; \
+        d = c; c = b; b = a; a = T1_ + T2_; \
+    }
+
 __device__ __forceinline__ void SHA256Initialize(uint32_t s[8])
 {
-#pragma unroll
-    for (int i = 0; i < 8; i++) s[i] = IV[i];
+    // FIPS 180-4 initial hash values (IV), as immediates.
+    s[0] = 0x6a09e667u; s[1] = 0xbb67ae85u; s[2] = 0x3c6ef372u; s[3] = 0xa54ff53au;
+    s[4] = 0x510e527fu; s[5] = 0x9b05688cu; s[6] = 0x1f83d9abu; s[7] = 0x5be0cd19u;
 }
+
 __device__ __forceinline__ void SHA256Transform(uint32_t state[8], uint32_t W_in[64])
 {
     uint32_t a = state[0], b = state[1], c = state[2], d = state[3];
@@ -79,31 +89,78 @@ __device__ __forceinline__ void SHA256Transform(uint32_t state[8], uint32_t W_in
 #pragma unroll
     for (int i = 0; i < 16; ++i) w[i] = W_in[i];
 
-#pragma unroll 64
-    for (int t = 0; t < 64; ++t) {
-        if (t >= 16) {
-            uint32_t s0 = smallS0(w[(t + 1)  & 15]);
-            uint32_t s1 = smallS1(w[(t + 14) & 15]);
-            uint32_t newW = w[t & 15] + s1 + w[(t + 9) & 15] + s0;
-            w[t & 15] = newW;
-        }
-        uint32_t Wt = w[t & 15];
-        uint32_t T1 = h + bigS1(e) + Ch(e, f, g) + K[t] + Wt;
-        uint32_t T2 = bigS0(a) + Maj(a, b, c);
+    // rounds 0..15: message words as-is (no schedule)
+    SHA_ROUND_PLAIN(0, 0x428A2F98u);
+    SHA_ROUND_PLAIN(1, 0x71374491u);
+    SHA_ROUND_PLAIN(2, 0xB5C0FBCFu);
+    SHA_ROUND_PLAIN(3, 0xE9B5DBA5u);
+    SHA_ROUND_PLAIN(4, 0x3956C25Bu);
+    SHA_ROUND_PLAIN(5, 0x59F111F1u);
+    SHA_ROUND_PLAIN(6, 0x923F82A4u);
+    SHA_ROUND_PLAIN(7, 0xAB1C5ED5u);
+    SHA_ROUND_PLAIN(8, 0xD807AA98u);
+    SHA_ROUND_PLAIN(9, 0x12835B01u);
+    SHA_ROUND_PLAIN(10, 0x243185BEu);
+    SHA_ROUND_PLAIN(11, 0x550C7DC3u);
+    SHA_ROUND_PLAIN(12, 0x72BE5D74u);
+    SHA_ROUND_PLAIN(13, 0x80DEB1FEu);
+    SHA_ROUND_PLAIN(14, 0x9BDC06A7u);
+    SHA_ROUND_PLAIN(15, 0xC19BF174u);
 
-        h = g;
-        g = f;
-        f = e;
-        e = d + T1;
-        d = c;
-        c = b;
-        b = a;
-        a = T1 + T2;
-    }
+    // rounds 16..63: rolling message schedule
+    SHA_ROUND_SCHED(16, 0xE49B69C1u);
+    SHA_ROUND_SCHED(17, 0xEFBE4786u);
+    SHA_ROUND_SCHED(18, 0x0FC19DC6u);
+    SHA_ROUND_SCHED(19, 0x240CA1CCu);
+    SHA_ROUND_SCHED(20, 0x2DE92C6Fu);
+    SHA_ROUND_SCHED(21, 0x4A7484AAu);
+    SHA_ROUND_SCHED(22, 0x5CB0A9DCu);
+    SHA_ROUND_SCHED(23, 0x76F988DAu);
+    SHA_ROUND_SCHED(24, 0x983E5152u);
+    SHA_ROUND_SCHED(25, 0xA831C66Du);
+    SHA_ROUND_SCHED(26, 0xB00327C8u);
+    SHA_ROUND_SCHED(27, 0xBF597FC7u);
+    SHA_ROUND_SCHED(28, 0xC6E00BF3u);
+    SHA_ROUND_SCHED(29, 0xD5A79147u);
+    SHA_ROUND_SCHED(30, 0x06CA6351u);
+    SHA_ROUND_SCHED(31, 0x14292967u);
+    SHA_ROUND_SCHED(32, 0x27B70A85u);
+    SHA_ROUND_SCHED(33, 0x2E1B2138u);
+    SHA_ROUND_SCHED(34, 0x4D2C6DFCu);
+    SHA_ROUND_SCHED(35, 0x53380D13u);
+    SHA_ROUND_SCHED(36, 0x650A7354u);
+    SHA_ROUND_SCHED(37, 0x766A0ABBu);
+    SHA_ROUND_SCHED(38, 0x81C2C92Eu);
+    SHA_ROUND_SCHED(39, 0x92722C85u);
+    SHA_ROUND_SCHED(40, 0xA2BFE8A1u);
+    SHA_ROUND_SCHED(41, 0xA81A664Bu);
+    SHA_ROUND_SCHED(42, 0xC24B8B70u);
+    SHA_ROUND_SCHED(43, 0xC76C51A3u);
+    SHA_ROUND_SCHED(44, 0xD192E819u);
+    SHA_ROUND_SCHED(45, 0xD6990624u);
+    SHA_ROUND_SCHED(46, 0xF40E3585u);
+    SHA_ROUND_SCHED(47, 0x106AA070u);
+    SHA_ROUND_SCHED(48, 0x19A4C116u);
+    SHA_ROUND_SCHED(49, 0x1E376C08u);
+    SHA_ROUND_SCHED(50, 0x2748774Cu);
+    SHA_ROUND_SCHED(51, 0x34B0BCB5u);
+    SHA_ROUND_SCHED(52, 0x391C0CB3u);
+    SHA_ROUND_SCHED(53, 0x4ED8AA4Au);
+    SHA_ROUND_SCHED(54, 0x5B9CCA4Fu);
+    SHA_ROUND_SCHED(55, 0x682E6FF3u);
+    SHA_ROUND_SCHED(56, 0x748F82EEu);
+    SHA_ROUND_SCHED(57, 0x78A5636Fu);
+    SHA_ROUND_SCHED(58, 0x84C87814u);
+    SHA_ROUND_SCHED(59, 0x8CC70208u);
+    SHA_ROUND_SCHED(60, 0x90BEFFFAu);
+    SHA_ROUND_SCHED(61, 0xA4506CEBu);
+    SHA_ROUND_SCHED(62, 0xBEF9A3F7u);
+    SHA_ROUND_SCHED(63, 0xC67178F2u);
 
     state[0] += a; state[1] += b; state[2] += c; state[3] += d;
     state[4] += e; state[5] += f; state[6] += g; state[7] += h;
 }
+
 __device__ __forceinline__ void RIPEMD160Initialize(uint32_t s[5])
 {
 

@@ -9,13 +9,19 @@ releases exist.
 ### K-2a: hash160 instruction cuts, first slice (2026-11-05)
 
 Changed
-- `CUDAHash.cuh`: SHA-256 `K[64]`/`IV[8]` moved from `__device__
-  __constant__` memory to `constexpr` arrays — with the 64-round loop
-  fully unrolled, every `K[t]`/`IV[i]` access has a compile-time index
-  and folds into instruction immediates, removing up to 64 constant
-  loads (LDC) per hashed key (each previously in the T1 dependency
-  chain). Values unchanged (one missing `ul` suffix typo fixed:
-  `0x1f83d9ab`).
+- `CUDAHash.cuh`: the 64 SHA-256 round constants and 8 IV words are now
+  LITERAL macro arguments (`SHA_ROUND_PLAIN`/`SHA_ROUND_SCHED`, the same
+  pattern as the RIPEMD-160 round macros in this file) instead of
+  `__constant__`-memory arrays — every constant and every `w[]` index
+  is a compile-time constant, the values fold into instruction
+  immediates, and up to 64 constant-memory loads (LDC) per hashed key
+  disappear (each previously in the T1 dependency chain). A first
+  attempt with `constexpr` arrays failed CI ("identifier K is
+  undefined in device code" — runtime loop indices are not constant
+  expressions at semantic-analysis time); the macro-literal form is the
+  correct one. Values mechanically generated from the FIPS 180-4 table;
+  verified bit-for-bit on host against hashlib + the project's
+  pure-python RIPEMD reference (2 vectors), plus rig gates.
 - `CUDAHash.cuh`: RIPEMD-160 `ROL` macro now uses `__funnelshift_l`
   explicitly — one SHF-class instruction per rotation instead of a
   shift-or sequence (compiler pattern-matching not guaranteed).

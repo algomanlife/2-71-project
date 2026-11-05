@@ -39,7 +39,9 @@ __device__ __constant__ uint64_t MSK62 = 0x3FFFFFFFFFFFFFFFULL;
 
 #define IDX threadIdx.x
 
-#define bswap32(v) __byte_perm(v, 0, 0x0123)
+// (bswap32 macro removed — dead, and it collided with the CUDAHash.cuh
+// function of the same name once the hash core moved into a header
+// included after this file; see fix/rdc0-build)
 
 #define __sright128(a,b,n) ((a)>>(n))|((b)<<(64-(n)))
 #define __sleft128(a,b,n) ((b)<<(n))|((a)>>(64-(n)))

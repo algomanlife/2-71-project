@@ -138,7 +138,8 @@ def write_outputs(record):
     md_path = os.path.join(REPORTS, f"lab-{stamp}.md")
     os.makedirs(RESULTS, exist_ok=True)
     os.makedirs(REPORTS, exist_ok=True)
-    json.dump(record, open(json_path, "w"), indent=2)
+    with open(json_path, "w") as f:
+        json.dump(record, f, indent=2)
 
     with open(csv_path, "w", newline="") as f:
         w = csv.writer(f)
@@ -161,8 +162,10 @@ def write_outputs(record):
 
 
 def compare(baseline_path, candidate_path):
-    base = json.load(open(baseline_path))
-    cand = json.load(open(candidate_path))
+    with open(baseline_path) as f:
+        base = json.load(f)
+    with open(candidate_path) as f:
+        cand = json.load(f)
     print(f"baseline: {baseline_path} ({base['utc']})")
     print(f"candidate: {candidate_path} ({cand['utc']})\n")
     print("| Bench | base median | cand median | delta | verdict |")

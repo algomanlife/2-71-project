@@ -81,12 +81,12 @@ class TestRangeOrderWarning(_Bin):
     init). Regression for requirement 7 of the investigation."""
 
     def test_range_beyond_curve_order_warns(self):
-        # range ending at the group order n itself (n is even; length
-        # n - 2^0... use a power-of-two length ending at n):
-        # simplest: end = n, start = n - 2^32 (length 2^32, aligned)
+        # range strictly beyond the group order n: start aligned up to a
+        # 2^32 multiple above n, inclusive end = start + 2^32 - 1
         n = int(SECP_ORDER_HEX, 16)
-        start = n - (1 << 32)
-        rng = f"{start:X}:{n:X}"
+        start = ((n >> 32) + 1) << 32
+        end = start + (1 << 32) - 1
+        rng = f"{start:X}:{end:X}"
         r = subprocess.run([BINARY, "--range", rng, "--address", KNOWN_ADDRESS],
                            capture_output=True, text=True, timeout=60)
         self.assertIn("Warning: range extends to or beyond the secp256k1 group order",

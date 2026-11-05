@@ -1,0 +1,12 @@
+# Real search run — K-2b slice 2 build (commit 041be91), manual rig invocation,
+# 2026-11-05. Third historical test vector (100000000000:1fffffffffff).
+# LONGEST sustained measurement in project history: 324 s, 2.75 T keys.
+
+./project-2-71 --range 100000000000:1fffffffffff --address 1NtiLNGegHWE3Mp9g2JPkgx6wUg4TW7bbk --grid 512,64
+======== Phase-1: BruteForce ==========================
+Time: 324.2 s | Speed: 9301.3 Mkeys/s | Count: 2754526074016 | Progress: 15.66 %
+
+======== FOUND MATCH! =================================
+Private Key   : 0000000000000000000000000000000000000000000000000000122FCA143C05
+Public Key    : 026ECABD2D22FDB737BE21975CE9A694E108EB94F3649C586CC7461C8ABF5DA71A
+Keys hashed   : 2754526074016

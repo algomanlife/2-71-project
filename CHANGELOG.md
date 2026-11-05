@@ -6,6 +6,26 @@ releases exist.
 
 ## [Unreleased]
 
+### Documentation: usage, workflow, and proof reference (2026-11-05)
+
+Added
+- `docs/USAGE.md` — complete CLI reference verified against the argument
+  parser (options, defaults, every validation constraint and error
+  message, exit codes, build variants, CUDACyclone→project-2-71
+  differences); user-facing examples use neutral placeholders.
+- `docs/SEARCH_WORKFLOW.md` — implementation walkthrough of the existing
+  search pipeline (parsing → validation → GPU init → work distribution
+  incl. partial-block scheduling → hot-path batch inversion → result
+  reporting/interruption/error behavior).
+- `docs/PROOF_AND_VALIDATION.md` — what proof.py actually verifies
+  (key-coverage categories, pass/fail semantics, limitations), the three
+  test suites, and reproducible non-targeted public-vector commands.
+- `docs/TROUBLESHOOTING.md` — argument/build/runtime errors mapped to
+  causes and fixes.
+- README: usage example neutralized to placeholders; navigation block.
+
+No source changes; documentation only.
+
 ### CUDA research lab & Phase-2 research docs (2026-11-05)
 
 Added

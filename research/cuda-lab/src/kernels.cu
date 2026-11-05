@@ -9,24 +9,30 @@
 #include <cstdio>
 #include <cstring>
 
+using lab::MODMUL_A;
+using lab::MODMUL_B;
+using lab::MODMUL_R1;
+using lab::MODMUL_R8;
+using lab::MODMUL_R64;
+
 __device__ __forceinline__ uint32_t rotr32(uint32_t x, int n) {
     return (x >> n) | (x << (32 - n));
 }
 
-__global__ void k_int32_mix(uint32_t* sink, int iters) {
+__global__ void k_int32_mix(uint64_t* sink, int iters) {
     uint32_t v = (uint32_t)(threadIdx.x + blockIdx.x * 97u);
     for (int i = 0; i < iters; ++i) {
         v = (v + 0x9E3779B9u) ^ rotr32(v, 13);
     }
-    if (v == 0xDEADBEEFu) sink[0] = v;  // sink (never taken; defeats DCE)
+    if (v == 0xDEADBEEFu) sink[0] = (uint64_t)v;  // sink (never taken; defeats DCE)
 }
 
-__global__ void k_int32_mul(uint32_t* sink, int iters) {
+__global__ void k_int32_mul(uint64_t* sink, int iters) {
     uint32_t v = (uint32_t)(threadIdx.x + blockIdx.x * 97u) | 1u;
     for (int i = 0; i < iters; ++i) {
         v = v * 0x85EBCA6Bu ^ rotr32(v, 11);
     }
-    if (v == 0xDEADBEEFu) sink[0] = v;
+    if (v == 0xDEADBEEFu) sink[0] = (uint64_t)v;
 }
 
 __global__ void k_int64_mul(uint64_t* sink, int iters) {
@@ -70,7 +76,7 @@ __global__ void k_local_rw(uint64_t* sink, int iters) {
     if (arr[0] == 0xDEADBEEFull) sink[0] = arr[0];
 }
 
-__global__ void k_divergent(uint32_t* sink, int iters) {
+__global__ void k_divergent(uint64_t* sink, int iters) {
     uint32_t v = (uint32_t)(threadIdx.x + blockIdx.x * 97u) | 1u;
     for (int i = 0; i < iters; ++i) {
         if (threadIdx.x & 1) v = v * 0x85EBCA6Bu;   // odd lanes

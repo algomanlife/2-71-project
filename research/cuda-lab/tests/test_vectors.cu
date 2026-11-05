@@ -21,7 +21,7 @@ int main() {
             0x1234567890ABCDEFULL, 0x1234567890ABCDEFULL };
         const uint64_t scalars[4][4] = {
             {2, 0, 0, 0}, {3, 0, 0, 0}, {7, 0, 0, 0}, {RAND_K[0], RAND_K[1], RAND_K[2], RAND_K[3]}};
-        if (lab::ec_scalar_mul_check(&scalars[0][0], &EC_EXPECTED[0][0], 4, 1, 128)) {
+        if (lab::ec_scalar_mul_check(&scalars[0][0], &lab::EC_EXPECTED[0][0], 4, 1, 128)) {
             std::printf("ec scalar-mul vectors .... PASS\n");
         } else {
             std::printf("ec scalar-mul vectors .... FAIL\n"); ++failures;

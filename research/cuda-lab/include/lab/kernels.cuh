@@ -11,10 +11,10 @@
 // ---------------------------------------------------------------------------
 
 // op = one iteration of: v = (v + 0x9E3779B9u) ^ rotr(v,13)  (uint32)
-__global__ void k_int32_mix(uint32_t* sink, int iters);
+__global__ void k_int32_mix(uint64_t* sink, int iters);
 
 // op = one iteration of: v = v * 0x85EBCA6Bu ^ rotr(v,11)     (uint32 mul)
-__global__ void k_int32_mul(uint32_t* sink, int iters);
+__global__ void k_int32_mul(uint64_t* sink, int iters);
 
 // op = one iteration of: v = v * 0x9E3779B185EBCA87ULL ^ (v >> 23) (uint64 mul)
 __global__ void k_int64_mul(uint64_t* sink, int iters);
@@ -36,7 +36,7 @@ __global__ void k_local_rw(uint64_t* sink, int iters);
 // op = one iteration of a deliberately warp-divergent branch
 // (odd lanes multiply, even lanes add) — compare throughput with
 // k_int32_mix to estimate divergence cost.
-__global__ void k_divergent(uint32_t* sink, int iters);
+__global__ void k_divergent(uint64_t* sink, int iters);
 
 // op = one full affine scalar multiplication k·G (public scalar) using
 // the project's scalarMulBaseAffine (isolated in lab/secp_ref.cuh).

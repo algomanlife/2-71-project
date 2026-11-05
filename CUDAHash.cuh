@@ -451,13 +451,8 @@ static __device__ void getHash160_33bytes(const uint8_t* pubkey33, uint8_t* hash
     getRIPEMD160_32bytes(sha256, hash20);
 }
 
-// K-2b (engine speed program): explicit byte-permute — one PRMT-class
-// instruction per word instead of the 4-AND/shift + 3-OR sequence
-// (compiler pattern-matching not guaranteed). Hot path: the 8 words of
-// RIPEMD160_from_SHA256_state per hashed key. Semantics identical
-// (0x0123 = full byte reverse); verified against the host oracle.
 __device__ __forceinline__ uint32_t bswap32(uint32_t x){
-    return __byte_perm(x, 0, 0x0123);
+    return ((x & 0x000000FFu) << 24) | ((x & 0x0000FF00u) << 8) | ((x & 0x00FF0000u) >> 8) | ((x & 0xFF000000u) >> 24);
 }
 __device__ __forceinline__ uint32_t pack_be4(uint8_t a,uint8_t b,uint8_t c,uint8_t d){
     return ((uint32_t)a<<24)|((uint32_t)b<<16)|((uint32_t)c<<8)|((uint32_t)d);

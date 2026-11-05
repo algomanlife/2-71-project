@@ -30,9 +30,20 @@ GENCODE += -gencode arch=compute_$(PTX_ARCH),code=compute_$(PTX_ARCH)
 # Extra nvcc flags (e.g. NVCC_EXTRA="-DMAX_BATCH_SIZE=512" for experiment E3
 # in docs/research/STACK_FRAME_INVESTIGATION.md).
 NVCC_EXTRA ?=
-NVCC_FLAGS := -O3 -rdc=true -use_fast_math --ptxas-options=-O3 $(GENCODE) $(NVCC_EXTRA)
+
+# Relocatable device code (default on, as historically). RDC=0 builds
+# whole-program device code (drops -rdc and -lcudadevrt) for experiment
+# EXP-01 in docs/optimization/EXPERIMENTS.md. Behavior of the binary is
+# identical; codegen and link mode differ.
+RDC ?= 1
+ifeq ($(RDC),1)
+  NVCC_FLAGS := -O3 -rdc=true -use_fast_math --ptxas-options=-O3 $(GENCODE) $(NVCC_EXTRA)
+  LDFLAGS    := -lcudadevrt -cudart=static
+else
+  NVCC_FLAGS := -O3 -use_fast_math --ptxas-options=-O3 $(GENCODE) $(NVCC_EXTRA)
+  LDFLAGS    := -cudart=static
+endif
 CXXFLAGS   := -std=c++17
-LDFLAGS    := -lcudadevrt -cudart=static
 
 .PHONY: all info ptxas-info clean
 
@@ -44,6 +55,7 @@ info:
 	@echo "Detected GPU  : $(if $(GPU_ARCH),compute $(GPU_ARCH),none - set GPU_ARCH= to override)"
 	@echo "Architectures : $(SM_ARCHS_SORTED) (PTX fallback: compute_$(PTX_ARCH))"
 	@echo "nvcc          : $(NVCC_FLAGS) $(CXXFLAGS)"
+	@echo "rdc           : $(RDC) (make RDC=0 for whole-program device code)"
 
 $(TARGET): $(OBJ)
 	$(CC) $(NVCC_FLAGS) $(CXXFLAGS) $(OBJ) -o $@ $(LDFLAGS)

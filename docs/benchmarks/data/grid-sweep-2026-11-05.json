@@ -1,0 +1,62 @@
+{
+  "provenance": {
+    "date": "2026-11-05",
+    "source": "maintainer-supplied console output from GPU runs (RTX 5090 server + RTX PRO 6000 workstation)",
+    "recorded_by": "QwenWork agent from maintainer-supplied values; raw console logs held by the maintainer",
+    "test_vector": "known-answer search: range 2000000000:3FFFFFFFFF, target 1HBtApAFA9B2YZw3G2YKSMCtb3dVnjuNe2, expected key 0x22382FACD0",
+    "termination": "early termination on key found (known-answer runs, NOT sustained throughput)",
+    "git_baseline_commit": "b3d13be2b95c240d391cb541431ea16ef9daee01"
+  },
+  "gpus": {
+    "rtx_5090": {
+      "name": "NVIDIA GeForce RTX 5090",
+      "architecture": "Blackwell",
+      "compute_capability": "12.0",
+      "sm_count": 170,
+      "cuda_toolkit": "13.4",
+      "driver": "615.71.09"
+    },
+    "rtx_pro_6000": {
+      "name": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+      "architecture": "Blackwell",
+      "compute_capability": "12.0",
+      "sm_count": 188,
+      "cuda_toolkit": "13.4",
+      "driver": "not recorded"
+    }
+  },
+  "baselines_mkeys_per_s": {
+    "rtx_5090": 7800.4,
+    "rtx_pro_6000": 7074.8
+  },
+  "best_observed": {
+    "rtx_5090": {"mkeys_per_s": 8133.0, "grid": "512,64"},
+    "rtx_pro_6000": {"mkeys_per_s": 7452.4, "grid": "128,64"}
+  },
+  "grid_sweep_mkeys_per_s": {
+    "128,64":   {"rtx_5090": 7843.9, "rtx_pro_6000": 7452.4},
+    "128,128":  {"rtx_5090": 7970.3, "rtx_pro_6000": 7416.4},
+    "128,256":  {"rtx_5090": 7826.7, "rtx_pro_6000": 7295.3},
+    "256,64":   {"rtx_5090": 8015.2, "rtx_pro_6000": 7141.7},
+    "256,128":  {"rtx_5090": null, "rtx_pro_6000": null, "note": "reference key found on both GPUs but no speed line was produced"},
+    "256,256":  {"rtx_5090": 7813.8, "rtx_pro_6000": 7058.2},
+    "512,64":   {"rtx_5090": 8133.0, "rtx_pro_6000": 7447.7},
+    "512,128":  {"rtx_5090": 7116.5, "rtx_pro_6000": 6276.5},
+    "512,256":  {"rtx_5090": 7833.1, "rtx_pro_6000": 7059.8},
+    "1024,64":  {"rtx_5090": 5698.1, "rtx_pro_6000": 6267.5},
+    "1024,128": {"rtx_5090": 7118.7, "rtx_pro_6000": 6264.7},
+    "1024,256": {"rtx_5090": 7835.2, "rtx_pro_6000": 7066.5}
+  },
+  "correctness": {
+    "grid_configs_found_reference_key": {"rtx_5090": "12/12", "rtx_pro_6000": "12/12"},
+    "unit_gpu_suite": "19/19 pass (RTX 5090 session)",
+    "proof_suite": "528/528 pass (RTX 5090 only)"
+  },
+  "limitations": [
+    "best-observed single values, not medians of repeated runs",
+    "early termination on known-answer match; not sustained throughput",
+    "no power/clock telemetry recorded",
+    "RTX PRO 6000 driver version not recorded",
+    "256,128 produced no speed line on either GPU (key was found)"
+  ]
+}

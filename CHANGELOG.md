@@ -6,6 +6,16 @@ releases exist.
 
 ## [Unreleased]
 
+### K-2b slice 2 ACCEPTED: +1.0% median, 9,301 Mkeys/s sustained (2026-11-05)
+
+- Rig verdict (record `sweep-20261105T155537Z.json`, self-proving
+  build-flags): `512,64` median **9,720.6** (best 9,832.5 — project
+  record) = **+1.0%** over the K-2a class, above the +0.5% accept line.
+- **Real long-run: 9,301.3 Mkeys/s sustained over 324 s / 2.75 T keys**
+  (third historical vector) — the highest sustained figure ever measured
+  on this rig. Cumulative sustained vs the historical log: ~+30%.
+- PERFORMANCE_HISTORY Accepted entry + records; README figures updated.
+
 ### Release 0.0.1 (2026-11-05)
 
 - README: complete Quick Start (fresh server → verified search:

@@ -175,8 +175,8 @@ known-answer runs, medians of 5 reps):
 
 | | RTX 5090 (170 SM) | RTX PRO 6000 Blackwell (188 SM) |
 |---|---:|---:|
-| Median of 5 reps | **9,672.7 Mkeys/s** (`512,64`, K-2a) | — |
-| Best observed | 9,811.9 Mkeys/s (`512,64`, K-2a) | **7,452.4 Mkeys/s** (`128,64`) |
+| Median of 5 reps | **9,720.6 Mkeys/s** (`512,64`, K-2a+K-2b2) | — |
+| Best observed | 9,832.5 Mkeys/s (`512,64`, K-2a+K-2b2) | **7,452.4 Mkeys/s** (`128,64`) |
 | Initial baseline (best observed) | 7,800.4 Mkeys/s | 7,074.8 Mkeys/s |
 | 12/12 grids found reference key | ✅ | ✅ |
 

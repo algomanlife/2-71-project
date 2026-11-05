@@ -76,6 +76,37 @@ optimization program in progress.
 Compilation support ≠ tested compatibility; runtime rows above reflect
 actually executed validation.
 
+## 4. Quick Start (fresh server → verified search)
+
+```bash
+# 1) Clone and set up (creates .venv with the ecdsa oracle dependency)
+git clone https://github.com/algomanlife/2-71-project.git
+cd 2-71-project
+bash scripts/setup.sh            # one command: venv + deps + build
+
+# 2) Correctness gates (33 tests; GPU required for the hardware suite)
+source .venv/bin/activate
+python3 -m unittest discover -s tests -v
+
+# 3) Run a search (known-answer structure — use your own range/target)
+./project-2-71 --range <start_hex>:<end_hex> \
+               --address <your_target_p2pkh_address> \
+               --grid 512,64
+# exit 0 = FOUND (banner + private key) · 1 = exhaustive · 130 = Ctrl+C · 2 = CUDA error
+
+# 4) Measure speed the reproducible way (medians of 5, records + telemetry)
+bash benchmarks/sweep/grid_sweep.sh --repeat 5 --grids "512,64"
+
+# 5) Standalone research lab (synthetic CUDA benchmarks, correctness-gated)
+cd research/cuda-lab
+cmake -B build -DCMAKE_CUDA_ARCHITECTURES=120 && cmake --build build -j
+./build/cuda-lab-tests && ./build/cuda-lab-bench --bench all --verify-only
+```
+
+If `Error: invalid P2PKH address` appears, the pasted address is not
+byte-identical to the real one (invisible characters) — verify
+`echo -n '<address>' | wc -c` prints 34; see TROUBLESHOOTING.md.
+
 ## 4. Build Requirements
 
 - CUDA Toolkit 12.8+ (13.x recommended; sweep measured on 13.4)

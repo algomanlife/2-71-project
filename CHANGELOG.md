@@ -6,6 +6,17 @@ releases exist.
 
 ## [Unreleased]
 
+### Release 0.0.1 (2026-11-05)
+
+- README: complete Quick Start (fresh server → verified search:
+  setup.sh, test gates, search invocation, sweep workflow, research
+  lab). Version 0.0.1 = today's measured state: RTX 5090 `512,64`
+  median **9,720.6 Mkeys/s** (best observed 9,832.5), real-run
+  sustained **9,301.3 Mkeys/s** (324 s / 2.75 T keys), two accepted
+  kernel optimizations (K-2a +7.4%, K-2b slice 2 +1.0%), full
+  correctness gates (33 tests + 528-test proof suite + 60/60 sweep
+  runs finding the reference key).
+
 ### K-2b slice 2: message assembly via byte-permute (2026-11-05)
 
 Changed

@@ -1211,17 +1211,16 @@ int main(int argc, char** argv) {
     // sub-range k: [range_start + k*(len/n), range_start + (k+1)*(len/n));
     // sub_len = range_len >> log2(n)
     int shift = 0; { int t = n; while (t > 1) { t >>= 1; ++shift; } }
-    uint64_t sub_len[4];
-    for (int j = 3; j >= 0; --j) {
-        int limbShift = shift - 64 * j;    // may be negative
-        if (limbShift >= 64) sub_len[j] = 0ull;
-        else if (limbShift > 0) sub_len[j] = range_len[j] >> limbShift;
-        else if (limbShift == 0) sub_len[j] = range_len[j];
-        else {
-            int from = j - 1, fshift = limbShift + 64;   // 1..63
-            uint64_t hi_part = (from >= 0) ? (range_len[from] << (64 - fshift)) : 0ull;
-            uint64_t lo_part = range_len[j] >> fshift;
-            sub_len[j] = hi_part | lo_part;
+    // sub_len = range_len >> shift, by iterative 1-bit shifts (shift is
+    // tiny: at most log2(deviceCount)); obviously correct, no limb-index
+    // arithmetic to get wrong.
+    uint64_t sub_len[4] = { range_len[0], range_len[1], range_len[2], range_len[3] };
+    for (int s = 0; s < shift; ++s) {
+        uint64_t carry = 0ull;
+        for (int j = 3; j >= 0; --j) {
+            uint64_t newCarry = sub_len[j] & 1ull;
+            sub_len[j] = (sub_len[j] >> 1) | (carry << 63);
+            carry = newCarry;
         }
     }
 

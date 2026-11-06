@@ -6,6 +6,17 @@ releases exist.
 
 ## [Unreleased]
 
+### K-3a verdict: REJECTED (2026-11-06)
+
+Rig (proof.py 848/848 PASS, sweep T103324Z on 5f86f1d): `512,64`
+median **9,263.1** vs this rig's baseline 9,453.4 = **-2.0%**. The
+plain-C ModAdd256 carry chain costs more than the two PTX-chained
+ModSubs it replaced. Reverted. With K-1 and K-3a both rejected on
+measurements, the program's evidence is consistent: the engine sits at
+~88% of its instruction-issue wall (~11 Gkeys/s lab estimate) and the
+remaining levers are marginal. Accepted engine state: K-2a (+7.4%) +
+K-2b2 (+1.0%); rig-dependent medians 9.4-9.7 Gkeys/s.
+
 ### K-1 verdict: REJECTED — register-window segmentation loses 23-27% (2026-11-06)
 
 Measured on the fresh rig (default-build baseline 9,453.4 Mkeys/s,

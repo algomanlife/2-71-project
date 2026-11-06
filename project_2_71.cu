@@ -855,7 +855,7 @@ static DeviceOutcome runDeviceSearch(int gpuId, int deviceId, int gpuCount, cons
     {
         std::lock_guard<std::mutex> lk(st.print_mx);
         if (gpuCount > 1) std::cout << "======== GPU " << gpuId << " of " << gpuCount << " ============\n";
-    std::cout << "======== 2^71 project =================================\n";
+    if (gpuId == 0) std::cout << "======== 2^71 project =================================\n";
     std::cout << "======== PrePhase: GPU Information ====================\n";
     std::cout << std::left << std::setw(20) << "Device"            << " : " << prop.name << " (compute " << prop.major << "." << prop.minor << ")\n";
     std::cout << std::left << std::setw(20) << "SM"                << " : " << prop.multiProcessorCount << "\n";
@@ -932,8 +932,9 @@ static DeviceOutcome runDeviceSearch(int gpuId, int deviceId, int gpuCount, cons
                               << " Mkeys/s | Count: " << tot
                               << " | Progress: " << std::fixed << std::setprecision(2) << (double)prog << " %";
                     std::cout.flush();
+                    lastHashes = tot;    // track the AGGREGATE (was: own count -> inflated speed)
                 }
-                lastHashes = h_hashes; tLast = now;
+                tLast = now;
             }
 
             if (st.stop.load()) { stop_all = true; break; }   // another GPU found / error

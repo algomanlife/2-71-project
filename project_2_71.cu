@@ -14,6 +14,7 @@
 #include <cmath>
 #include <csignal>
 #include <atomic>
+#include <mutex>
 
 #include "CUDAMath.h"
 #include "sha256.h"
@@ -600,154 +601,51 @@ extern std::string formatHex256(const uint64_t limbs[4]);
 extern long double ld_from_u256(const uint64_t v[4]);
 extern bool decode_p2pkh_address(const std::string& addr, uint8_t out20[20]);
 extern std::string formatCompressedPubHex(const uint64_t X[4], const uint64_t Y[4]);
-int main(int argc, char** argv) {
-    std::signal(SIGINT, handle_sigint);
+// ---------------------------------------------------------------------------
+// Multi-GPU engine: one host thread per GPU, each searching a disjoint
+// equal-length power-of-two sub-range of the validated user range. The
+// per-GPU code path is the proven single-GPU engine unchanged (identical
+// kernel, tables, launch loop). Cross-GPU coordination is host-side only:
+// a shared stop flag (any GPU finds the key / errors / Ctrl+C stops the
+// fleet within one kernel slice) and aggregated progress reporting. With
+// one GPU the behavior and console output are identical to the
+// single-GPU engine.
+struct SearchConfig {
+    uint32_t B;         // points batch size (grid A)
+    uint32_t bpsm;      // batches per SM (grid B)
+    uint32_t slices;    // batches per launch per thread
+    uint8_t  target[20];
+    long double total_keys_ld;   // full range length (progress denominator)
+};
 
-    std::string target_hash_hex, range_hex, address_b58;
-    uint32_t runtime_points_batch_size = 128;
-    uint32_t runtime_batches_per_sm    = 8;
-    uint32_t slices_per_launch         = 64;
+struct DeviceOutcome {
+    bool found = false;
+    bool completed = false;
+    bool error = false;
+    bool interrupted = false;
+    unsigned long long final_hashes = 0ull;
+    std::string errmsg;
+    static DeviceOutcome makeError(const char* m) { DeviceOutcome o; o.error = true; o.errmsg = m; return o; }
+};
 
-    auto parse_grid = [](const std::string& s, uint32_t& a_out, uint32_t& b_out)->bool {
-        size_t comma = s.find(',');
-        if (comma == std::string::npos) return false;
-        auto trim = [](std::string& z){
-            size_t p1 = z.find_first_not_of(" \t");
-            size_t p2 = z.find_last_not_of(" \t");
-            if (p1 == std::string::npos) { z.clear(); return; }
-            z = z.substr(p1, p2 - p1 + 1);
-        };
-        std::string a_str = s.substr(0, comma);
-        std::string b_str = s.substr(comma + 1);
-        trim(a_str); trim(b_str);
-        if (a_str.empty() || b_str.empty()) return false;
-        char* endp=nullptr;
-        unsigned long aa = std::strtoul(a_str.c_str(), &endp, 10); if (*endp) return false;
-        endp=nullptr;
-        unsigned long bb = std::strtoul(b_str.c_str(), &endp, 10); if (*endp) return false;
-        if (aa == 0ul || bb == 0ul) return false;
-        if (aa > (1ul<<20) || bb > (1ul<<20)) return false;
-        a_out=(uint32_t)aa; b_out=(uint32_t)bb; return true;
-    };
+struct SharedState {
+    std::atomic<bool> found{false};
+    std::atomic<bool> stop{false};
+    std::vector<std::atomic<unsigned long long>> hashes;
+    std::mutex print_mx;
+    FoundResult winner{};
+    int winner_gpu = -1;
+};
 
-    for (int i = 1; i < argc; ++i) {
-        std::string arg = argv[i];
-        if      (arg == "--target-hash160" && i + 1 < argc) target_hash_hex = argv[++i];
-        else if (arg == "--address"        && i + 1 < argc) address_b58     = argv[++i];
-        else if (arg == "--range"          && i + 1 < argc) range_hex       = argv[++i];
-        else if (arg == "--grid"           && i + 1 < argc) {
-            uint32_t a=0,b=0;
-            if (!parse_grid(argv[++i], a, b)) {
-                std::cerr << "Error: --grid expects \"A,B\" (positive integers).\n";
-                return EXIT_FAILURE;
-            }
-            runtime_points_batch_size = a;
-            runtime_batches_per_sm    = b;
-        }
-        else if (arg == "--slices" && i + 1 < argc) {
-            char* endp=nullptr;
-            unsigned long v = std::strtoul(argv[++i], &endp, 10);
-            if (*endp != '\0' || v == 0ul || v > (1ul<<20)) {
-                std::cerr << "Error: --slices must be in 1.." << (1u<<20) << "\n";
-                return EXIT_FAILURE;
-            }
-            slices_per_launch = (uint32_t)v;
-        }
-    }
-
-    if (range_hex.empty() || (target_hash_hex.empty() && address_b58.empty())) {
-        std::cerr << "Usage: " << argv[0]
-                  << " --range <start_hex>:<end_hex> (--address <base58> | --target-hash160 <hash160_hex>) [--grid A,B] [--slices N]\n";
-        return EXIT_FAILURE;
-    }
-    if (!target_hash_hex.empty() && !address_b58.empty()) {
-        std::cerr << "Error: provide either --address or --target-hash160, not both.\n";
-        return EXIT_FAILURE;
-    }
-
-    size_t colon_pos = range_hex.find(':');
-    if (colon_pos == std::string::npos) { std::cerr << "Error: range format must be start:end\n"; return EXIT_FAILURE; }
-    std::string start_hex = range_hex.substr(0, colon_pos);
-    std::string end_hex   = range_hex.substr(colon_pos + 1);
-
-    uint64_t range_start[4]{0}, range_end[4]{0};
-    if (!hexToLE64(start_hex, range_start) || !hexToLE64(end_hex, range_end)) {
-        std::cerr << "Error: invalid range hex\n"; return EXIT_FAILURE;
-    }
-
-    uint8_t target_hash160[20];
-    if (!address_b58.empty()) {
-        if (!decode_p2pkh_address(address_b58, target_hash160)) {
-            std::cerr << "Error: invalid P2PKH address\n"; return EXIT_FAILURE;
-        }
-    } else {
-        if (!hexToHash160(target_hash_hex, target_hash160)) {
-            std::cerr << "Error: invalid target hash160 hex\n"; return EXIT_FAILURE;
-        }
-    }
-
-    auto is_pow2 = [](uint32_t v)->bool { return v && ((v & (v-1)) == 0); };
-    if (!is_pow2(runtime_points_batch_size) || (runtime_points_batch_size & 1u)) {
-        std::cerr << "Error: batch size must be even and a power of two.\n";
-        return EXIT_FAILURE;
-    }
-    if (runtime_points_batch_size > MAX_BATCH_SIZE) {
-        std::cerr << "Error: batch size must be <= " << MAX_BATCH_SIZE << " (kernel limit).\n";
-        return EXIT_FAILURE;
-    }
-
-    uint64_t range_len[4]; sub256(range_end, range_start, range_len); add256_u64(range_len, 1ull, range_len);
-
-    auto is_zero_256 = [](const uint64_t a[4])->bool { return (a[0]|a[1]|a[2]|a[3]) == 0ull; };
-    auto is_power_of_two_256 = [&](const uint64_t a[4])->bool {
-        if (is_zero_256(a)) return false;
-        uint64_t am1[4]; uint64_t borrow = 1ull;
-        for (int i=0;i<4;++i) {
-            uint64_t v = a[i] - borrow; borrow = (a[i] < borrow) ? 1ull : 0ull; am1[i] = v;
-            if (!borrow && i+1<4) { for (int k=i+1;k<4;++k) am1[k] = a[k]; break; }
-        }
-        uint64_t and0=a[0]&am1[0], and1=a[1]&am1[1], and2=a[2]&am1[2], and3=a[3]&am1[3];
-        return (and0|and1|and2|and3)==0ull;
-    };
-    if (!is_power_of_two_256(range_len)) {
-        std::cerr << "Error: range length (end - start + 1) must be a power of two.\n"; return EXIT_FAILURE;
-    }
-    uint64_t len_minus1[4];
-    {   uint64_t borrow=1ull;
-        for (int i=0;i<4;++i) {
-            uint64_t v=range_len[i]-borrow; borrow=(range_len[i]<borrow)?1ull:0ull; len_minus1[i]=v;
-            if (!borrow && i+1<4) { for (int k=i+1;k<4;++k) len_minus1[k]=range_len[k]; break; }
-        }
-    }
-    // Boundary diagnostics: warn when the range extends to or beyond the
-    // secp256k1 group order n. Scalars >= n wrap on the curve (k and k-n
-    // give the same public key), so such ranges do not cover additional
-    // distinct private keys. Reporting-only: the search is unchanged.
-    {
-        const uint64_t ORDER[4] = { 0xBFD25E8CD0364141ULL, 0xBAAEDCE6AF48A03BULL,
-                                    0xFFFFFFFFFFFFFFFEULL, 0xFFFFFFFFFFFFFFFFULL };
-        bool end_ge_order = false;
-        for (int i = 3; i >= 0; --i) {
-            if (range_end[i] != ORDER[i]) { end_ge_order = (range_end[i] > ORDER[i]); break; }
-        }
-        if (end_ge_order) {
-            std::cerr << "Warning: range extends to or beyond the secp256k1 group order; "
-                         "scalars >= n wrap on the curve and do not yield additional "
-                         "distinct private keys.\n";
-        }
-    }
-    {   uint64_t and0 = range_start[0] & len_minus1[0];
-        uint64_t and1 = range_start[1] & len_minus1[1];
-        uint64_t and2 = range_start[2] & len_minus1[2];
-        uint64_t and3 = range_start[3] & len_minus1[3];
-        if ((and0|and1|and2|and3) != 0ull) {
-            std::cerr << "Error: start must be aligned to the range length.\n"; return EXIT_FAILURE;
-        }
-    }
-
-    int device=0; cudaDeviceProp prop{};
-    if (cudaGetDevice(&device)!=cudaSuccess || cudaGetDeviceProperties(&prop, device)!=cudaSuccess) {
-        std::cerr<<"CUDA init error: "<<cudaGetErrorString(cudaGetLastError())<<"\n"; return EXIT_FAILURE;
+static DeviceOutcome runDeviceSearch(int gpuId, int deviceId, int gpuCount, const SearchConfig& cfg,
+                                     const uint64_t sub_start[4], const uint64_t sub_len[4],
+                                     SharedState& st)
+{
+    cudaSetDevice(deviceId);
+    cudaDeviceProp prop{};
+    if (cudaGetDeviceProperties(&prop, deviceId)!=cudaSuccess) {
+        std::cerr<<"CUDA init error on device "<<deviceId<<": "<<cudaGetErrorString(cudaGetLastError())<<"\n";
+        return DeviceOutcome::makeError("cudaGetDeviceProperties failed");
     }
 
     // CUDA error check helper — reports the actual CUDA error name and
@@ -774,16 +672,16 @@ int main(int argc, char** argv) {
     uint64_t maxThreadsByMem = usableMem / bytesPerThread;
 
     uint64_t q_div_batch[4], r_div_batch = 0ull;
-    divmod_256_by_u64(range_len, (uint64_t)runtime_points_batch_size, q_div_batch, r_div_batch);
+    divmod_256_by_u64(sub_len, (uint64_t)cfg.B, q_div_batch, r_div_batch);
     if (r_div_batch != 0ull) {
-        std::cerr << "Error: range length must be divisible by batch size (" << runtime_points_batch_size << ").\n";
+        std::cerr << "Error: range length must be divisible by batch size (" << cfg.B << ").\n";
         return EXIT_FAILURE;
     }
     bool q_fits_u64 = (q_div_batch[3]|q_div_batch[2]|q_div_batch[1]) == 0ull;
     uint64_t total_batches_u64 = q_fits_u64 ? q_div_batch[0] : 0ull;
     if (!q_fits_u64) { std::cerr << "Error: total batches too large for u64.\n"; return EXIT_FAILURE; }
 
-    uint64_t userUpper = (uint64_t)prop.multiProcessorCount * (uint64_t)runtime_batches_per_sm * (uint64_t)threadsPerBlock;
+    uint64_t userUpper = (uint64_t)prop.multiProcessorCount * (uint64_t)cfg.bpsm * (uint64_t)threadsPerBlock;
     if (userUpper == 0ull) userUpper = UINT64_MAX;
 
     auto pick_threads_total = [&](uint64_t upper)->uint64_t {
@@ -824,10 +722,10 @@ int main(int argc, char** argv) {
     int blocks = (int)((threadsTotal + (uint64_t)threadsPerBlock - 1) / (uint64_t)threadsPerBlock);
 
     uint64_t per_thread_cnt[4]; uint64_t r_u64 = 0ull;
-    divmod_256_by_u64(range_len, threadsTotal, per_thread_cnt, r_u64);
-    if (r_u64 != 0ull) { std::cerr << "Internal error: range_len not divisible by threadsTotal.\n"; return EXIT_FAILURE; }
+    divmod_256_by_u64(sub_len, threadsTotal, per_thread_cnt, r_u64);
+    if (r_u64 != 0ull) { std::cerr << "Internal error: sub_len not divisible by threadsTotal.\n"; return EXIT_FAILURE; }
     {   uint64_t qq[4], rr=0ull;
-        divmod_256_by_u64(per_thread_cnt, (uint64_t)runtime_points_batch_size, qq, rr);
+        divmod_256_by_u64(per_thread_cnt, (uint64_t)cfg.B, qq, rr);
         if (rr != 0ull) { std::cerr << "Internal error: per-thread count is not a multiple of batch size.\n"; return EXIT_FAILURE; }
     }
 
@@ -843,10 +741,10 @@ int main(int argc, char** argv) {
         h_counts256[i*4+3] = per_thread_cnt[3];
     }
 
-    const uint32_t B = runtime_points_batch_size;
+    const uint32_t B = cfg.B;
     const uint32_t half = B >> 1;
     {
-        uint64_t cur[4] = { range_start[0], range_start[1], range_start[2], range_start[3] };
+        uint64_t cur[4] = { sub_start[0], sub_start[1], sub_start[2], sub_start[3] };
         for (uint64_t i = 0; i < threadsTotal; ++i) {
             uint64_t Sc[4]; add256_u64(cur, (uint64_t)half, Sc); 
             h_start_scalars[i*4+0] = Sc[0];
@@ -860,12 +758,12 @@ int main(int argc, char** argv) {
     }
 
     {
-        uint32_t prefix_le = (uint32_t)target_hash160[0]
-                           | ((uint32_t)target_hash160[1] << 8)
-                           | ((uint32_t)target_hash160[2] << 16)
-                           | ((uint32_t)target_hash160[3] << 24);
+        uint32_t prefix_le = (uint32_t)cfg.target[0]
+                           | ((uint32_t)cfg.target[1] << 8)
+                           | ((uint32_t)cfg.target[2] << 16)
+                           | ((uint32_t)cfg.target[3] << 24);
         ck(cudaMemcpyToSymbol(c_target_prefix, &prefix_le, sizeof(prefix_le)), "cudaMemcpyToSymbol(c_target_prefix)");
-        ck(cudaMemcpyToSymbol(c_target_hash160, target_hash160, 20), "cudaMemcpyToSymbol(c_target_hash160)");
+        ck(cudaMemcpyToSymbol(c_target_hash160, cfg.target, 20), "cudaMemcpyToSymbol(c_target_hash160)");
     }
 
     uint64_t *d_start_scalars=nullptr, *d_Px=nullptr, *d_Py=nullptr, *d_Rx=nullptr, *d_Ry=nullptr, *d_counts256=nullptr;
@@ -954,6 +852,9 @@ int main(int argc, char** argv) {
     size_t usedB = totalB - freeB;
     double util = totalB ? (double)usedB * 100.0 / (double)totalB : 0.0;
 
+    {
+        std::lock_guard<std::mutex> lk(st.print_mx);
+        if (gpuCount > 1) std::cout << "======== GPU " << gpuId << " of " << gpuCount << " ============\n";
     std::cout << "======== 2^71 project =================================\n";
     std::cout << "======== PrePhase: GPU Information ====================\n";
     std::cout << std::left << std::setw(20) << "Device"            << " : " << prop.name << " (compute " << prop.major << "." << prop.minor << ")\n";
@@ -961,14 +862,16 @@ int main(int argc, char** argv) {
     std::cout << std::left << std::setw(20) << "ThreadsPerBlock"   << " : " << threadsPerBlock << "\n";
     std::cout << std::left << std::setw(20) << "Blocks"            << " : " << (int)(threadsTotal / (uint64_t)threadsPerBlock) << "\n";
     std::cout << std::left << std::setw(20) << "Points batch size" << " : " << B << "\n";
-    std::cout << std::left << std::setw(20) << "Batches/SM"        << " : " << runtime_batches_per_sm << "\n";
-    std::cout << std::left << std::setw(20) << "Batches/launch"    << " : " << slices_per_launch << " (per thread)\n";
+    std::cout << std::left << std::setw(20) << "Batches/SM"        << " : " << cfg.bpsm << "\n";
+    std::cout << std::left << std::setw(20) << "Batches/launch"    << " : " << cfg.slices << " (per thread)\n";
     std::cout << std::left << std::setw(20) << "Memory utilization"<< " : "
               << std::fixed << std::setprecision(1) << util << "% ("
               << human_bytes((double)usedB) << " / " << human_bytes((double)totalB) << ")\n";
     std::cout << "------------------------------------------------------- \n";
-    std::cout << std::left << std::setw(20) << "Total threads"     << " : " << (uint64_t)threadsTotal << "\n\n";
-    std::cout << "======== Phase-1: BruteForce ==========================\n";
+    std::cout << std::left << std::setw(20) << "Total threads"     << " : " << (uint64_t)threadsTotal << "\n";
+    std::cout << "\n";
+    }   // banner lock
+    if (gpuId == 0) std::cout << "======== Phase-1: BruteForce ==========================\n";
 
     cudaStream_t streamKernel;
     ck(cudaStreamCreateWithFlags(&streamKernel, cudaStreamNonBlocking), "create stream");
@@ -985,6 +888,7 @@ int main(int argc, char** argv) {
     std::string runtime_error_msg;
     while (!stop_all) {
         if (g_sigint) std::cerr << "\n[Ctrl+C] Interrupt received. Finishing current kernel slice and exiting...\n";
+        if (g_sigint) st.stop.store(true);
 
         unsigned int zeroU = 0u;
         ck(cudaMemcpyAsync(d_any_left, &zeroU, sizeof(unsigned int), cudaMemcpyHostToDevice, streamKernel), "zero d_any_left");
@@ -994,7 +898,7 @@ int main(int argc, char** argv) {
             d_start_scalars, d_counts256,
             threadsTotal,
             B,
-            slices_per_launch,
+            cfg.slices,
             d_found_flag, d_found_result,
             d_hashes_accum,
             d_any_left
@@ -1014,20 +918,25 @@ int main(int argc, char** argv) {
             if (dt >= 1.0) {
                 unsigned long long h_hashes = 0ull;
                 ck(cudaMemcpy(&h_hashes, d_hashes_accum, sizeof(unsigned long long), cudaMemcpyDeviceToHost), "read hashes");
-                double delta = (double)(h_hashes - lastHashes);
-                double mkeys = delta / (dt * 1e6);
-                double elapsed = std::chrono::duration<double>(now - t0).count();
-                long double total_keys_ld = ld_from_u256(range_len);
-                long double prog = total_keys_ld > 0.0L ? ((long double)h_hashes / total_keys_ld) * 100.0L : 0.0L;
-                if (prog > 100.0L) prog = 100.0L;
-                std::cout << "\rTime: " << std::fixed << std::setprecision(1) << elapsed
-                          << " s | Speed: " << std::fixed << std::setprecision(1) << mkeys
-                          << " Mkeys/s | Count: " << h_hashes
-                          << " | Progress: " << std::fixed << std::setprecision(2) << (double)prog << " %";
-                std::cout.flush();
+                st.hashes[gpuId].store(h_hashes);
+                if (gpuId == 0) {
+                    unsigned long long tot = 0ull;
+                    for (int g = 0; g < gpuCount; ++g) tot += st.hashes[g].load();
+                    double delta = (double)(tot - lastHashes);
+                    double mkeys = delta / (dt * 1e6);
+                    double elapsed = std::chrono::duration<double>(now - t0).count();
+                    long double prog = cfg.total_keys_ld > 0.0L ? ((long double)tot / cfg.total_keys_ld) * 100.0L : 0.0L;
+                    if (prog > 100.0L) prog = 100.0L;
+                    std::cout << "\rTime: " << std::fixed << std::setprecision(1) << elapsed
+                              << " s | Speed: " << std::fixed << std::setprecision(1) << mkeys
+                              << " Mkeys/s | Count: " << tot
+                              << " | Progress: " << std::fixed << std::setprecision(2) << (double)prog << " %";
+                    std::cout.flush();
+                }
                 lastHashes = h_hashes; tLast = now;
             }
 
+            if (st.stop.load()) { stop_all = true; break; }   // another GPU found / error
             int host_found = 0;
             ck(cudaMemcpy(&host_found, d_found_flag, sizeof(int), cudaMemcpyDeviceToHost), "read found_flag");
             if (host_found == FOUND_READY) { stop_all = true; break; }
@@ -1066,45 +975,30 @@ int main(int argc, char** argv) {
     int h_found_flag = 0;
     ck(cudaMemcpy(&h_found_flag, d_found_flag, sizeof(int), cudaMemcpyDeviceToHost), "final read found_flag");
 
-    // Exit codes: 0 = found, 1 = exhaustive not-found, 130 = interrupted,
-    // 2 = CUDA/runtime error. (Invalid arguments exit 1 earlier, before
-    // any GPU work.)
-    int exit_code = EXIT_SUCCESS;
-
-    // Final hash-accounting read (same counter the Progress line uses):
-    // makes the reported candidate count directly checkable against the
-    // completed work — on exhaustive completion it must equal the range
-    // length exactly (each key hashed exactly once).
+    DeviceOutcome out{};
     unsigned long long h_hashes_final = 0ull;
     if (!runtime_error) {
         ck(cudaMemcpy(&h_hashes_final, d_hashes_accum, sizeof(unsigned long long), cudaMemcpyDeviceToHost), "final read hashes");
+        st.hashes[gpuId].store(h_hashes_final);
     }
+    out.final_hashes = h_hashes_final;
 
     if (h_found_flag == FOUND_READY) {
         FoundResult host_result{};
         ck(cudaMemcpy(&host_result, d_found_result, sizeof(FoundResult), cudaMemcpyDeviceToHost), "read found_result");
-        std::cout << "\n======== FOUND MATCH! =================================\n";
-        std::cout << "Private Key   : " << formatHex256(host_result.scalar) << "\n";
-        std::cout << "Public Key    : " << formatCompressedPubHex(host_result.Rx, host_result.Ry) << "\n";
-        std::cout << "Keys hashed   : " << h_hashes_final << "\n";
+        out.found = true;
+        {
+            std::lock_guard<std::mutex> lk(st.print_mx);
+            if (!st.found.exchange(true)) { st.winner = host_result; st.winner_gpu = gpuId; }
+            st.stop.store(true);
+        }
     } else if (runtime_error) {
-        std::cout << "======== CUDA ERROR ===================================\n";
-        std::cout << "Execution failed: " << runtime_error_msg
-                  << ". See stderr above for the CUDA error details.\n";
-        exit_code = 2;
+        out.error = true; out.errmsg = runtime_error_msg;
+        st.stop.store(true);
     } else if (g_sigint) {
-        std::cout << "======== INTERRUPTED (Ctrl+C) ==========================\n";
-        std::cout << "Search was interrupted by user. Partial progress above.\n";
-        exit_code = 130;
+        out.interrupted = true;
     } else if (completed_all) {
-        std::cout << "======== KEY NOT FOUND (exhaustive) ===================\n";
-        std::cout << "Target hash160 was not found within the specified range.\n";
-        std::cout << "Keys hashed   : " << h_hashes_final << "\n";
-        exit_code = 1;
-    } else {
-        std::cout << "======== TERMINATED ===================================\n";
-        std::cout << "Execution stopped without completing the range and without a match.\n";
-        exit_code = 2;
+        out.completed = true;
     }
 
     cudaFree(d_start_scalars); cudaFree(d_Px); cudaFree(d_Py); cudaFree(d_Rx); cudaFree(d_Ry);
@@ -1113,6 +1007,286 @@ int main(int argc, char** argv) {
 
     if (h_start_scalars) cudaFreeHost(h_start_scalars);
     if (h_counts256)     cudaFreeHost(h_counts256);
+
+    return out;
+}
+
+int main(int argc, char** argv) {
+    std::signal(SIGINT, handle_sigint);
+
+    std::string target_hash_hex, range_hex, address_b58;
+    uint32_t runtime_points_batch_size = 128;
+    uint32_t runtime_batches_per_sm    = 8;
+    uint32_t slices_per_launch         = 64;
+    int opt_device = -1;   // -1 = use all detected GPUs (multi-GPU mode)
+
+    auto parse_grid = [](const std::string& s, uint32_t& a_out, uint32_t& b_out)->bool {
+        size_t comma = s.find(',');
+        if (comma == std::string::npos) return false;
+        auto trim = [](std::string& z){
+            size_t p1 = z.find_first_not_of(" \t");
+            size_t p2 = z.find_last_not_of(" \t");
+            if (p1 == std::string::npos) { z.clear(); return; }
+            z = z.substr(p1, p2 - p1 + 1);
+        };
+        std::string a_str = s.substr(0, comma);
+        std::string b_str = s.substr(comma + 1);
+        trim(a_str); trim(b_str);
+        if (a_str.empty() || b_str.empty()) return false;
+        char* endp=nullptr;
+        unsigned long aa = std::strtoul(a_str.c_str(), &endp, 10); if (*endp) return false;
+        endp=nullptr;
+        unsigned long bb = std::strtoul(b_str.c_str(), &endp, 10); if (*endp) return false;
+        if (aa == 0ul || bb == 0ul) return false;
+        if (aa > (1ul<<20) || bb > (1ul<<20)) return false;
+        a_out=(uint32_t)aa; b_out=(uint32_t)bb; return true;
+    };
+
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+        if      (arg == "--target-hash160" && i + 1 < argc) target_hash_hex = argv[++i];
+        else if (arg == "--address"        && i + 1 < argc) address_b58     = argv[++i];
+        else if (arg == "--range"          && i + 1 < argc) range_hex       = argv[++i];
+        else if (arg == "--grid"           && i + 1 < argc) {
+            uint32_t a=0,b=0;
+            if (!parse_grid(argv[++i], a, b)) {
+                std::cerr << "Error: --grid expects \"A,B\" (positive integers).\n";
+                return EXIT_FAILURE;
+            }
+            runtime_points_batch_size = a;
+            runtime_batches_per_sm    = b;
+        }
+        else if (arg == "--device" && i + 1 < argc) {
+            char* endp=nullptr;
+            long dv = std::strtol(argv[++i], &endp, 10);
+            if (*endp != '\0' || dv < 0) {
+                std::cerr << "Error: --device expects a non-negative device index.\n";
+                return EXIT_FAILURE;
+            }
+            opt_device = (int)dv;
+        }
+        else if (arg == "--slices" && i + 1 < argc) {
+            char* endp=nullptr;
+            unsigned long v = std::strtoul(argv[++i], &endp, 10);
+            if (*endp != '\0' || v == 0ul || v > (1ul<<20)) {
+                std::cerr << "Error: --slices must be in 1.." << (1u<<20) << "\n";
+                return EXIT_FAILURE;
+            }
+            slices_per_launch = (uint32_t)v;
+        }
+    }
+
+    if (range_hex.empty() || (target_hash_hex.empty() && address_b58.empty())) {
+        std::cerr << "Usage: " << argv[0]
+                  << " --range <start_hex>:<end_hex> (--address <base58> | --target-hash160 <hash160_hex>) [--grid A,B] [--slices N] [--device N]\n";
+        return EXIT_FAILURE;
+    }
+    if (!target_hash_hex.empty() && !address_b58.empty()) {
+        std::cerr << "Error: provide either --address or --target-hash160, not both.\n";
+        return EXIT_FAILURE;
+    }
+
+    size_t colon_pos = range_hex.find(':');
+    if (colon_pos == std::string::npos) { std::cerr << "Error: range format must be start:end\n"; return EXIT_FAILURE; }
+    std::string start_hex = range_hex.substr(0, colon_pos);
+    std::string end_hex   = range_hex.substr(colon_pos + 1);
+
+    uint64_t range_start[4]{0}, range_end[4]{0};
+    if (!hexToLE64(start_hex, range_start) || !hexToLE64(end_hex, range_end)) {
+        std::cerr << "Error: invalid range hex\n"; return EXIT_FAILURE;
+    }
+
+    uint8_t target_hash160[20];
+    if (!address_b58.empty()) {
+        if (!decode_p2pkh_address(address_b58, target_hash160)) {
+            std::cerr << "Error: invalid P2PKH address\n"; return EXIT_FAILURE;
+        }
+    } else {
+        if (!hexToHash160(target_hash_hex, target_hash160)) {
+            std::cerr << "Error: invalid target hash160 hex\n"; return EXIT_FAILURE;
+        }
+    }
+
+    auto is_pow2 = [](uint32_t v)->bool { return v && ((v & (v-1)) == 0); };
+    if (!is_pow2(runtime_points_batch_size) || (runtime_points_batch_size & 1u)) {
+        std::cerr << "Error: batch size must be even and a power of two.\n";
+        return EXIT_FAILURE;
+    }
+    if (runtime_points_batch_size > MAX_BATCH_SIZE) {
+        std::cerr << "Error: batch size must be <= " << MAX_BATCH_SIZE << " (kernel limit).\n";
+        return EXIT_FAILURE;
+    }
+
+    uint64_t range_len[4]; sub256(range_end, range_start, range_len); add256_u64(range_len, 1ull, range_len);
+
+    auto is_zero_256 = [](const uint64_t a[4])->bool { return (a[0]|a[1]|a[2]|a[3]) == 0ull; };
+    auto is_power_of_two_256 = [&](const uint64_t a[4])->bool {
+        if (is_zero_256(a)) return false;
+        uint64_t am1[4]; uint64_t borrow = 1ull;
+        for (int i=0;i<4;++i) {
+            uint64_t v = a[i] - borrow; borrow = (a[i] < borrow) ? 1ull : 0ull; am1[i] = v;
+            if (!borrow && i+1<4) { for (int k=i+1;k<4;++k) am1[k] = a[k]; break; }
+        }
+        uint64_t and0=a[0]&am1[0], and1=a[1]&am1[1], and2=a[2]&am1[2], and3=a[3]&am1[3];
+        return (and0|and1|and2|and3)==0ull;
+    };
+    if (!is_power_of_two_256(range_len)) {
+        std::cerr << "Error: range length (end - start + 1) must be a power of two.\n"; return EXIT_FAILURE;
+    }
+    uint64_t len_minus1[4];
+    {   uint64_t borrow=1ull;
+        for (int i=0;i<4;++i) {
+            uint64_t v=range_len[i]-borrow; borrow=(range_len[i]<borrow)?1ull:0ull; len_minus1[i]=v;
+            if (!borrow && i+1<4) { for (int k=i+1;k<4;++k) len_minus1[k]=range_len[k]; break; }
+        }
+    }
+    // Boundary diagnostics: warn when the range extends to or beyond the
+    // secp256k1 group order n. Scalars >= n wrap on the curve (k and k-n
+    // give the same public key), so such ranges do not cover additional
+    // distinct private keys. Reporting-only: the search is unchanged.
+    {
+        const uint64_t ORDER[4] = { 0xBFD25E8CD0364141ULL, 0xBAAEDCE6AF48A03BULL,
+                                    0xFFFFFFFFFFFFFFFEULL, 0xFFFFFFFFFFFFFFFFULL };
+        bool end_ge_order = false;
+        for (int i = 3; i >= 0; --i) {
+            if (range_end[i] != ORDER[i]) { end_ge_order = (range_end[i] > ORDER[i]); break; }
+        }
+        if (end_ge_order) {
+            std::cerr << "Warning: range extends to or beyond the secp256k1 group order; "
+                         "scalars >= n wrap on the curve and do not yield additional "
+                         "distinct private keys.\n";
+        }
+    }
+    {   uint64_t and0 = range_start[0] & len_minus1[0];
+        uint64_t and1 = range_start[1] & len_minus1[1];
+        uint64_t and2 = range_start[2] & len_minus1[2];
+        uint64_t and3 = range_start[3] & len_minus1[3];
+        if ((and0|and1|and2|and3) != 0ull) {
+            std::cerr << "Error: start must be aligned to the range length.\n"; return EXIT_FAILURE;
+        }
+    }
+
+
+    // ---------------- multi-GPU orchestration ----------------
+    int devCount = 0;
+    cudaError_t devErr = cudaGetDeviceCount(&devCount);
+    if (devErr != cudaSuccess || devCount <= 0) {
+        std::cerr << "CUDA init error: no usable CUDA devices (" << cudaGetErrorString(devErr) << ")\n";
+        return EXIT_FAILURE;
+    }
+
+    int firstDevice = 0;
+    if (opt_device >= 0) {
+        if (opt_device >= devCount) {
+            std::cerr << "Error: --device " << opt_device << " exceeds device count (" << devCount << ").\n";
+            return EXIT_FAILURE;
+        }
+        firstDevice = opt_device;   // single explicit device, full range
+    }
+
+    // Largest power-of-two N <= available devices such that each sub-range
+    // still holds at least one full batch (sub-range length stays a power
+    // of two and divisible by the batch size by construction: len = 2^m,
+    // sub = 2^(m - log2 N)).
+    int n = 1;
+    if (opt_device < 0) {
+        while (n * 2 <= devCount) n *= 2;
+        while (n > 1) {
+            long double keys_per_gpu = ld_from_u256(range_len) / (long double)n;
+            if (keys_per_gpu >= (long double)runtime_points_batch_size) break;
+            n /= 2;
+        }
+    }
+
+    SearchConfig cfg;
+    cfg.B = runtime_points_batch_size;
+    cfg.bpsm = runtime_batches_per_sm;
+    cfg.slices = slices_per_launch;
+    for (int k = 0; k < 20; ++k) cfg.target[k] = target_hash160[k];
+    cfg.total_keys_ld = ld_from_u256(range_len);
+
+    SharedState st;
+    st.hashes = std::vector<std::atomic<unsigned long long>>(n);
+
+    // sub-range k: [range_start + k*(len/n), range_start + (k+1)*(len/n));
+    // sub_len = range_len >> log2(n)
+    int shift = 0; { int t = n; while (t > 1) { t >>= 1; ++shift; } }
+    uint64_t sub_len[4];
+    for (int j = 3; j >= 0; --j) {
+        int limbShift = shift - 64 * j;    // may be negative
+        if (limbShift >= 64) sub_len[j] = 0ull;
+        else if (limbShift > 0) sub_len[j] = range_len[j] >> limbShift;
+        else if (limbShift == 0) sub_len[j] = range_len[j];
+        else {
+            int from = j - 1, fshift = limbShift + 64;   // 1..63
+            uint64_t hi_part = (from >= 0) ? (range_len[from] << (64 - fshift)) : 0ull;
+            uint64_t lo_part = range_len[j] >> fshift;
+            sub_len[j] = hi_part | lo_part;
+        }
+    }
+
+    std::vector<uint64_t> sub_starts((size_t)n * 4);
+    {
+        uint64_t cur[4] = { range_start[0], range_start[1], range_start[2], range_start[3] };
+        for (int k = 0; k < n; ++k) {
+            for (int j = 0; j < 4; ++j) sub_starts[(size_t)k * 4 + j] = cur[j];
+            uint64_t nxt[4]; add256(cur, sub_len, nxt);
+            for (int j = 0; j < 4; ++j) cur[j] = nxt[j];
+        }
+    }
+
+    if (n > 1) {
+        std::cout << "======== 2^71 project (multi-GPU: " << n << " devices) ========\n";
+    }
+
+    std::vector<DeviceOutcome> outcomes(n);
+    std::vector<std::thread> workers;
+    for (int k = 0; k < n; ++k) {
+        int dev = (opt_device >= 0) ? firstDevice : k;
+        const uint64_t* sstart = &sub_starts[(size_t)k * 4];
+        workers.emplace_back([dev, n, &cfg, sstart, &sub_len, &st, &outcomes, k]() {
+            outcomes[k] = runDeviceSearch(k, dev, n, cfg, sstart, sub_len, st);
+        });
+    }
+    for (auto& w : workers) w.join();
+
+    // ---------------- aggregate result ----------------
+    unsigned long long total_hashes = 0ull;
+    bool any_error = false, all_completed = true, any_interrupted = false;
+    std::string first_err;
+    for (auto& o : outcomes) {
+        total_hashes += o.final_hashes;
+        if (o.error) { any_error = true; if (first_err.empty()) first_err = o.errmsg; }
+        if (!o.completed) all_completed = false;
+        if (o.interrupted) any_interrupted = true;
+    }
+
+    int exit_code = EXIT_SUCCESS;
+    if (st.found.load()) {
+        std::cout << "\n======== FOUND MATCH! =================================\n";
+        std::cout << "Private Key   : " << formatHex256(st.winner.scalar) << "\n";
+        std::cout << "Public Key    : " << formatCompressedPubHex(st.winner.Rx, st.winner.Ry) << "\n";
+        if (n > 1) std::cout << "Found by GPU  : " << st.winner_gpu << "\n";
+        std::cout << "Keys hashed   : " << total_hashes << "\n";
+    } else if (any_error) {
+        std::cout << "======== CUDA ERROR ===================================\n";
+        std::cout << "Execution failed: " << first_err
+                  << ". See stderr above for the CUDA error details.\n";
+        exit_code = 2;
+    } else if (g_sigint || any_interrupted) {
+        std::cout << "======== INTERRUPTED (Ctrl+C) ==========================\n";
+        std::cout << "Search was interrupted by user. Partial progress above.\n";
+        exit_code = 130;
+    } else if (all_completed) {
+        std::cout << "======== KEY NOT FOUND (exhaustive) ===================\n";
+        std::cout << "Target hash160 was not found within the specified range.\n";
+        std::cout << "Keys hashed   : " << total_hashes << "\n";
+        exit_code = 1;
+    } else {
+        std::cout << "======== TERMINATED ===================================\n";
+        std::cout << "Execution stopped without completing the range and without a match.\n";
+        exit_code = 2;
+    }
 
     return exit_code;
 }

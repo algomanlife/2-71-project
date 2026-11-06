@@ -6,6 +6,26 @@ releases exist.
 
 ## [Unreleased]
 
+### Multi-GPU engine: one host thread per GPU over a split range (2026-11-06)
+
+Added
+- `--device N` (optional): pin the search to one explicit GPU. Default
+  (no flag): **all detected GPUs share the range** — the validated
+  power-of-two range is split into N equal power-of-two sub-ranges
+  (largest N <= device count that keeps each sub-range >= one batch),
+  one host thread per GPU runs the unchanged single-GPU engine on its
+  sub-range. Two 5090-class cards => ~2x aggregate throughput.
+- Cross-GPU coordination is host-side: whichever GPU finds the key
+  sets a shared stop flag — the others stop within one kernel slice;
+  progress/Speed/Count lines are aggregated (printed once); the FOUND
+  banner reports the winning GPU and the fleet-wide keys-hashed total.
+- Single-GPU behavior and console output are unchanged (same code
+  path, one thread); `--device 0` reproduces the classic engine
+  explicitly. Coverage is a partition by construction (each sub-range
+  is exhaustively searched); proof.py + the test suite gate it.
+- Exit codes unchanged: 0 found / 1 exhaustive / 130 interrupt / 2
+  CUDA error (any device).
+
 ### K-3a verdict: REJECTED (2026-11-06)
 
 Rig (proof.py 848/848 PASS, sweep T103324Z on 5f86f1d): `512,64`

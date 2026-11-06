@@ -256,18 +256,19 @@ __global__ void kernel_point_add_and_check_oneinv(
             uint64_t dx_inv_i[4];
             _ModMult(dx_inv_i, subp[i], inverse);
 
+            uint64_t k3_C[4];
             {
                 uint64_t px3[4], s[4], lam[4];
                 uint64_t px_i[4], py_i[4];
 #pragma unroll
                 for (int j=0;j<4;++j) { px_i[j]=c_Gx[(size_t)i*4+j]; py_i[j]=c_Gy[(size_t)i*4+j]; }
+                ModAdd256(k3_C, x1, px_i);   // K-3: shared (x1 + px_i) for the +/- pair
 
                 ModSub256(s, py_i, y1);
                 _ModMult(lam, s, dx_inv_i);
 
                 _ModSqr(px3, lam);     
-                ModSub256(px3, px3, x1);
-                ModSub256(px3, px3, px_i);
+                ModSub256(px3, px3, k3_C);
 
                 ModSub256(s, x1, px3); 
                 _ModMult(s, s, lam);
@@ -312,8 +313,7 @@ __global__ void kernel_point_add_and_check_oneinv(
                 _ModMult(lam, s, dx_inv_i);
 
                 _ModSqr(px3, lam);
-                ModSub256(px3, px3, x1);
-                ModSub256(px3, px3, px_i);
+                ModSub256(px3, px3, k3_C);
 
                 ModSub256(s, x1, px3);
                 _ModMult(s, s, lam);
@@ -388,18 +388,19 @@ __global__ void kernel_point_add_and_check_oneinv(
             uint64_t dx_inv_i[4];
             _ModMult(dx_inv_i, q[u], inverse);
 
+            uint64_t k3_C[4];
             {
                 uint64_t px3[4], s[4], lam[4];
                 uint64_t px_i[4], py_i[4];
 #pragma unroll
                 for (int j=0;j<4;++j) { px_i[j]=c_Gx[(size_t)i*4+j]; py_i[j]=c_Gy[(size_t)i*4+j]; }
+                ModAdd256(k3_C, x1, px_i);   // K-3: shared (x1 + px_i) for the +/- pair
 
                 ModSub256(s, py_i, y1);
                 _ModMult(lam, s, dx_inv_i);
 
                 _ModSqr(px3, lam);     
-                ModSub256(px3, px3, x1);
-                ModSub256(px3, px3, px_i);
+                ModSub256(px3, px3, k3_C);
 
                 ModSub256(s, x1, px3); 
                 _ModMult(s, s, lam);
@@ -444,8 +445,7 @@ __global__ void kernel_point_add_and_check_oneinv(
                 _ModMult(lam, s, dx_inv_i);
 
                 _ModSqr(px3, lam);
-                ModSub256(px3, px3, x1);
-                ModSub256(px3, px3, px_i);
+                ModSub256(px3, px3, k3_C);
 
                 ModSub256(s, x1, px3);
                 _ModMult(s, s, lam);
@@ -497,18 +497,19 @@ __global__ void kernel_point_add_and_check_oneinv(
             _ModMult(dx_inv_i, subp_last, inverse);
 #endif
 
+            uint64_t k3_C[4];
             uint64_t px3[4], s[4], lam[4];
             uint64_t px_i[4], py_i[4];
 #pragma unroll
             for (int j=0;j<4;++j) { px_i[j]=c_Gx[(size_t)i*4+j]; py_i[j]=c_Gy[(size_t)i*4+j]; }
+            ModAdd256(k3_C, x1, px_i);   // K-3: shared (x1 + px_i)
             ModNeg256(py_i, py_i);
 
             ModSub256(s, py_i, y1);
             _ModMult(lam, s, dx_inv_i);
 
             _ModSqr(px3, lam);
-            ModSub256(px3, px3, x1);
-            ModSub256(px3, px3, px_i);
+            ModSub256(px3, px3, k3_C);
 
             ModSub256(s, x1, px3);
             _ModMult(s, s, lam);

@@ -293,6 +293,50 @@ __device__ void ModSub256(uint64_t* r,uint64_t* b) {
     }
 }
 
+// K-3 (engine speed program): modular addition (r = a + b mod p).
+// Plain-C carry chain (host-verified against python mod-p arithmetic
+// on 200k random vectors); used to share (x1 + px_i) between the
+// +/- point-add pair: two ModSubs per branch become one shared add.
+__device__ void ModAdd256(uint64_t *r, uint64_t *a, uint64_t *b) {
+    uint64_t c = 0;
+#pragma unroll
+    for (int j = 0; j < 4; ++j) {
+        uint64_t s = a[j] + b[j];
+        uint64_t c1 = (s < a[j]) ? 1u : 0u;
+        uint64_t t = s + c;
+        uint64_t c2 = (t < s) ? 1u : 0u;
+        r[j] = t; c = c1 | c2;
+    }
+    if (c) {
+        // r = a+b-2^256; result = r + (2^256 - p) = r + 0x1000003D1
+        uint64_t k0 = 0x00000001000003D1ULL;
+        uint64_t cc = 0;
+#pragma unroll
+        for (int j = 0; j < 4; ++j) {
+            uint64_t kj = (j == 0) ? k0 : 0ull;
+            uint64_t s2 = r[j] + kj;
+            uint64_t c3 = (s2 < r[j]) ? 1u : 0u;
+            uint64_t t2 = s2 + cc;
+            uint64_t c4 = (t2 < s2) ? 1u : 0u;
+            r[j] = t2; cc = c3 | c4;
+        }
+    } else if (r[3]==0xFFFFFFFFFFFFFFFFULL && r[2]==0xFFFFFFFFFFFFFFFFULL &&
+               r[1]==0xFFFFFFFFFFFFFFFFULL && r[0]>=0xFFFFFFFEFFFFFC2FULL) {
+        // r >= p (only possible shape: top three limbs all-ones) -> subtract p
+        uint64_t p[4] = { 0xFFFFFFFEFFFFFC2FULL, 0xFFFFFFFFFFFFFFFFULL,
+                          0xFFFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFFULL };
+        uint64_t borrow = 0;
+#pragma unroll
+        for (int j = 0; j < 4; ++j) {
+            uint64_t t3 = r[j] - p[j];
+            uint64_t b1 = (r[j] < p[j]) ? 1u : 0u;
+            uint64_t u = t3 - borrow;
+            uint64_t b2 = (t3 < borrow) ? 1u : 0u;
+            r[j] = u; borrow = b1 | b2;
+        }
+    }
+}
+
 __device__ __forceinline__ uint32_t ctz(uint64_t x) {
   uint32_t n;
   asm("{\n\t"

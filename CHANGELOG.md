@@ -6,6 +6,22 @@ releases exist.
 
 ## [Unreleased]
 
+### K-1: subp[] segmentation — compile-gated experiment (2026-11-05)
+
+Added
+- `project_2_71.cu`: new compile knob `SUBP_SEG` (default **0 = legacy
+  path, binary identical to the baseline**). With `-DSUBP_SEG=8/16` the
+  16 KB local-memory prefix-product array is replaced by per-segment
+  checkpoints (~2 KB) plus a register-resident segment window rebuilt
+  per segment — removing the runtime-indexed `subp[i]` local
+  loads/stores from the hot loop (the ~130 LDL/STL identified in the
+  SASS evidence) and shrinking the stack frame 8x.
+- Math is bit-identical (same factors, same order — segments only
+  re-materialize the same prefix products in registers); key coverage
+  is unchanged — **proof.py is the acceptance gate**, then medians.
+- CI: two compile gates (SUBP_SEG=8 and 16) added; default build
+  untouched.
+
 ### K-2b slice 2 ACCEPTED: +1.0% median, 9,301 Mkeys/s sustained (2026-11-05)
 
 - Rig verdict (record `sweep-20261105T155537Z.json`, self-proving

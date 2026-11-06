@@ -679,7 +679,7 @@ static DeviceOutcome runDeviceSearch(int gpuId, int deviceId, int gpuCount, cons
     }
     bool q_fits_u64 = (q_div_batch[3]|q_div_batch[2]|q_div_batch[1]) == 0ull;
     uint64_t total_batches_u64 = q_fits_u64 ? q_div_batch[0] : 0ull;
-        return DeviceOutcome::makeError("total batches too large for u64");
+    if (!q_fits_u64) { std::cerr << "Error: total batches too large for u64.\n"; return DeviceOutcome::makeError("total batches too large for u64"); }
 
     uint64_t userUpper = (uint64_t)prop.multiProcessorCount * (uint64_t)cfg.bpsm * (uint64_t)threadsPerBlock;
     if (userUpper == 0ull) userUpper = UINT64_MAX;
@@ -723,10 +723,10 @@ static DeviceOutcome runDeviceSearch(int gpuId, int deviceId, int gpuCount, cons
 
     uint64_t per_thread_cnt[4]; uint64_t r_u64 = 0ull;
     divmod_256_by_u64(sub_len, threadsTotal, per_thread_cnt, r_u64);
-        return DeviceOutcome::makeError("internal: sub_len not divisible by threadsTotal");
+    if (r_u64 != 0ull) { std::cerr << "Internal error: sub_len not divisible by threadsTotal.\n"; return DeviceOutcome::makeError("internal: sub_len not divisible by threadsTotal"); }
     {   uint64_t qq[4], rr=0ull;
         divmod_256_by_u64(per_thread_cnt, (uint64_t)cfg.B, qq, rr);
-        return DeviceOutcome::makeError("internal: per-thread count not a multiple of batch size");
+        if (rr != 0ull) { std::cerr << "Internal error: per-thread count not a multiple of batch size.\n"; return DeviceOutcome::makeError("internal: per-thread count not a multiple of batch size"); }
     }
 
     uint64_t* h_counts256     = nullptr;

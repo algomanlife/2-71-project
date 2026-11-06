@@ -6,21 +6,16 @@ releases exist.
 
 ## [Unreleased]
 
-### K-3 slice 1: shared (x1 + px_i) in the +/- point-add pair (2026-11-06)
+### K-3a verdict: REJECTED (2026-11-06)
 
-Changed
-- `CUDAMath.h`: new `ModAdd256` (r = a + b mod p) — plain-C carry
-  chain, host-verified bit-for-bit against python mod-p arithmetic on
-  200,000 random vectors.
-- `project_2_71.cu`: each +/- point-add pair (and the phase-D final
-  step) now computes `k3_C = x1 + px_i` once and derives
-  `x3 = lam^2 - k3_C` in both branches — two ModSubs per branch become
-  one shared ModAdd + one ModSub. Bit-identical by associativity of
-  modular addition; key coverage unchanged (proof.py gates).
-- Honest expectation: small (~0.2-0.5%) — one field op + load traffic
-  per pair; the deeper algebraic restructure (sum/product identities)
-  was analyzed and is counterproductive (needs more modmuls than it
-  saves). Rig medians decide.
+Rig (proof.py 848/848 PASS, sweep T103324Z on 5f86f1d): `512,64`
+median **9,263.1** vs this rig's baseline 9,453.4 = **-2.0%**. The
+plain-C ModAdd256 carry chain costs more than the two PTX-chained
+ModSubs it replaced. Reverted. With K-1 and K-3a both rejected on
+measurements, the program's evidence is consistent: the engine sits at
+~88% of its instruction-issue wall (~11 Gkeys/s lab estimate) and the
+remaining levers are marginal. Accepted engine state: K-2a (+7.4%) +
+K-2b2 (+1.0%); rig-dependent medians 9.4-9.7 Gkeys/s.
 
 ### K-1 verdict: REJECTED — register-window segmentation loses 23-27% (2026-11-06)
 

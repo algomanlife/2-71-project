@@ -887,8 +887,7 @@ static DeviceOutcome runDeviceSearch(int gpuId, int deviceId, int gpuCount, cons
     bool runtime_error = false;
     std::string runtime_error_msg;
     while (!stop_all) {
-        if (g_sigint) std::cerr << "\n[Ctrl+C] Interrupt received. Finishing current kernel slice and exiting...\n";
-        if (g_sigint) st.stop.store(true);
+        if (g_sigint) { if (gpuId == 0) std::cerr << "\n[Ctrl+C] Interrupt received. Finishing current kernel slice and exiting...\n"; st.stop.store(true); }
 
         unsigned int zeroU = 0u;
         ck(cudaMemcpyAsync(d_any_left, &zeroU, sizeof(unsigned int), cudaMemcpyHostToDevice, streamKernel), "zero d_any_left");
@@ -971,7 +970,7 @@ static DeviceOutcome runDeviceSearch(int gpuId, int deviceId, int gpuCount, cons
     }
 
     ck(cudaDeviceSynchronize(), "device synchronize");
-    std::cout << "\n";
+    if (gpuId == 0) std::cout << "\n";
 
     int h_found_flag = 0;
     ck(cudaMemcpy(&h_found_flag, d_found_flag, sizeof(int), cudaMemcpyDeviceToHost), "final read found_flag");

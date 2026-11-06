@@ -6,6 +6,22 @@ releases exist.
 
 ## [Unreleased]
 
+### K-3 slice 1: shared (x1 + px_i) in the +/- point-add pair (2026-11-06)
+
+Changed
+- `CUDAMath.h`: new `ModAdd256` (r = a + b mod p) — plain-C carry
+  chain, host-verified bit-for-bit against python mod-p arithmetic on
+  200,000 random vectors.
+- `project_2_71.cu`: each +/- point-add pair (and the phase-D final
+  step) now computes `k3_C = x1 + px_i` once and derives
+  `x3 = lam^2 - k3_C` in both branches — two ModSubs per branch become
+  one shared ModAdd + one ModSub. Bit-identical by associativity of
+  modular addition; key coverage unchanged (proof.py gates).
+- Honest expectation: small (~0.2-0.5%) — one field op + load traffic
+  per pair; the deeper algebraic restructure (sum/product identities)
+  was analyzed and is counterproductive (needs more modmuls than it
+  saves). Rig medians decide.
+
 ### K-1 verdict: REJECTED — register-window segmentation loses 23-27% (2026-11-06)
 
 Measured on the fresh rig (default-build baseline 9,453.4 Mkeys/s,

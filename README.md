@@ -145,6 +145,7 @@ project-2-71 --range <start_hex>:<end_hex> (--address <base58> | --target-hash16
 | `--target-hash160` | 40 hex chars | exclusive with `--address` |
 | `--grid` | `A,B` = points-per-batch × batches-per-SM | A even power of two ≤ 1024, divides range |
 | `--slices` | batches per thread per launch | 1 … 2^20 |
+| `--device` | pin to one GPU index | default: ALL GPUs share the range (multi-GPU) |
 
 Example (structure — substitute your own range and target):
 

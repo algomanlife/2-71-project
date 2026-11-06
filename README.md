@@ -318,8 +318,7 @@ inversions for multiplications.
   <img src="docs/assets/lab-calibration.svg" alt="Lab calibration: modmul ceiling vs engine usage" width="880"/>
 </p>
 
-**Multi-GPU (2× RTX 5090):** [setup & test runbook](docs/MULTI_GPU_SETUP.md) —
-one range, all GPUs, aggregated ~2x throughput.
+**Multi-GPU (2× RTX 5090, v0.0.2 — measured):** [setup & test runbook](docs/MULTI_GPU_SETUP.md) — one range, all GPUs: **17,159.5 Mkeys/s peak / 16.6 Gkeys/s aggregate sustained** (2.02× single-card, both historical vectors found by the correct GPU, [log](docs/benchmarks/data/execution-log-2026-11-06-2gpu.txt)).
 
 **User & reference documentation:**
 [Usage (CLI reference)](docs/USAGE.md) ·

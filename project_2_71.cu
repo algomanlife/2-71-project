@@ -921,9 +921,8 @@ static DeviceOutcome runDeviceSearch(int gpuId, int deviceId, int gpuCount, cons
                 if (gpuId == 0) {
                     unsigned long long tot = 0ull;
                     for (int g = 0; g < gpuCount; ++g) tot += st.hashes[g].load();
-                    double delta = (double)(tot - lastHashes);
-                    double mkeys = delta / (dt * 1e6);
                     double elapsed = std::chrono::duration<double>(now - t0).count();
+                    double mkeys = (elapsed > 0.0) ? ((double)tot / (elapsed * 1e6)) : 0.0;   // cumulative average — immune to tick timing
                     long double prog = cfg.total_keys_ld > 0.0L ? ((long double)tot / cfg.total_keys_ld) * 100.0L : 0.0L;
                     if (prog > 100.0L) prog = 100.0L;
                     std::cout << "\rTime: " << std::fixed << std::setprecision(1) << elapsed

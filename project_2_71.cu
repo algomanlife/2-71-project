@@ -483,7 +483,6 @@ __global__ void kernel_point_add_and_check_oneinv(
             for (int j=0;j<4;++j) gxmi[j] = c_Gx[(size_t)i*4 + j];
             ModSub256(gxmi, gxmi, x1);
             _ModMult(inverse, inverse, gxmi);
-        }
                 }
             }
         }

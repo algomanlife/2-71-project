@@ -675,11 +675,11 @@ static DeviceOutcome runDeviceSearch(int gpuId, int deviceId, int gpuCount, cons
     divmod_256_by_u64(sub_len, (uint64_t)cfg.B, q_div_batch, r_div_batch);
     if (r_div_batch != 0ull) {
         std::cerr << "Error: range length must be divisible by batch size (" << cfg.B << ").\n";
-        return EXIT_FAILURE;
+        return DeviceOutcome::makeError("range length not divisible by batch size");
     }
     bool q_fits_u64 = (q_div_batch[3]|q_div_batch[2]|q_div_batch[1]) == 0ull;
     uint64_t total_batches_u64 = q_fits_u64 ? q_div_batch[0] : 0ull;
-    if (!q_fits_u64) { std::cerr << "Error: total batches too large for u64.\n"; return EXIT_FAILURE; }
+        return DeviceOutcome::makeError("total batches too large for u64");
 
     uint64_t userUpper = (uint64_t)prop.multiProcessorCount * (uint64_t)cfg.bpsm * (uint64_t)threadsPerBlock;
     if (userUpper == 0ull) userUpper = UINT64_MAX;
@@ -715,7 +715,7 @@ static DeviceOutcome runDeviceSearch(int gpuId, int deviceId, int gpuCount, cons
     }
     if (threadsTotal == 0ull) {
         std::cerr << "Error: failed to pick threadsTotal satisfying divisibility.\n";
-        return EXIT_FAILURE;
+        return DeviceOutcome::makeError("failed to pick threadsTotal");
     }
     // ceil: with the small-range fallback the last block may be partial
     // (threadsTotal need not be a multiple of threadsPerBlock).
@@ -723,10 +723,10 @@ static DeviceOutcome runDeviceSearch(int gpuId, int deviceId, int gpuCount, cons
 
     uint64_t per_thread_cnt[4]; uint64_t r_u64 = 0ull;
     divmod_256_by_u64(sub_len, threadsTotal, per_thread_cnt, r_u64);
-    if (r_u64 != 0ull) { std::cerr << "Internal error: sub_len not divisible by threadsTotal.\n"; return EXIT_FAILURE; }
+        return DeviceOutcome::makeError("internal: sub_len not divisible by threadsTotal");
     {   uint64_t qq[4], rr=0ull;
         divmod_256_by_u64(per_thread_cnt, (uint64_t)cfg.B, qq, rr);
-        if (rr != 0ull) { std::cerr << "Internal error: per-thread count is not a multiple of batch size.\n"; return EXIT_FAILURE; }
+        return DeviceOutcome::makeError("internal: per-thread count not a multiple of batch size");
     }
 
     uint64_t* h_counts256     = nullptr;

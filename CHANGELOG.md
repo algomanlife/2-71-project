@@ -6,6 +6,17 @@ releases exist.
 
 ## [Unreleased]
 
+### v0.0.2 hardware validation + records (2026-11-06)
+
+- Rig 2× RTX 5090: 33/33 tests, proof.py 848/848, both historical
+  vectors found by the correct GPU (split verification live). Records:
+  **17,159.5 Mkeys/s peak / 16.6 Gkeys/s aggregate sustained**
+  (2.02× single-card; 5.58 T keys on the 333 s vector-3 run) —
+  registered in PERFORMANCE_HISTORY + README ([log](docs/benchmarks/data/execution-log-2026-11-06-2gpu.txt)).
+- Speed line now reports the cumulative average (total keys / elapsed
+  time) — immune to 1 Hz tick timing artifacts (a long-run tick showed
+  8.4 G while Count/Time was 16.6 G).
+
 ### Release 0.0.2 preparation: multi-GPU hardening review (2026-11-06)
 
 - Full review of the multi-GPU host path after the two regression

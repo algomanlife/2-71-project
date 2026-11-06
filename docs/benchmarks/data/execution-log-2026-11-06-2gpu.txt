@@ -1,0 +1,22 @@
+# Multi-GPU real search run — v0.0.2 (2x RTX 5090, rig C.59410577), 2026-11-06.
+# Preserved verbatim from the maintainer's terminal.
+# Vector 2 (8000000000:ffffffffff, range 2^39, split across 2 GPUs):
+
+======== 2^71 project (multi-GPU: 2 devices) ========
+Time: 21.1 s | Speed: 17159.5 Mkeys/s | Count: 355163567648 | Progress: 64.60 %
+
+======== FOUND MATCH! =================================
+Private Key   : 000000000000000000000000000000000000000000000000000000E9AE4933D6
+Public Key    : 03A2EFA402FD5268400C77C20E574BA86409EDEDEE7C4020E4B9F0EDBEE53DE0D4
+Found by GPU  : 1
+Keys hashed   : 388354181280
+
+# Vector 3 (100000000000:1fffffffffff, range 2^44, split across 2 GPUs):
+
+Time: 333.0 s | Speed: 8451.7 Mkeys/s (tick artifact; Count/Time = 16.6 G) | Count: 5536359694592
+
+======== FOUND MATCH! =================================
+Private Key   : 0000000000000000000000000000000000000000000000000000122FCA143C05
+Public Key    : 026ECABD2D22FDB737BE21975CE9A694E108EB94F3649C586CC7461C8ABF5DA71A
+Found by GPU  : 0
+Keys hashed   : 5578577513952

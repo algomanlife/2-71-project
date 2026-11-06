@@ -6,6 +6,18 @@ releases exist.
 
 ## [Unreleased]
 
+### Release 0.0.2 preparation: multi-GPU hardening review (2026-11-06)
+
+- Full review of the multi-GPU host path after the two regression
+  fixes: split invariants verified exhaustively on host (exact
+  partition, power-of-two sub-ranges, batch divisibility for all
+  m / devCount / B combinations); stop & exit-code matrix checked
+  (found / other-GPU-stop / exhaustive / CUDA error / Ctrl+C);
+  progress & Count confirmed correct (verified live on the 2-GPU rig:
+  correct key found by the correct GPU, Count/Time = 2x single-card).
+- Cosmetic: the Ctrl+C notice and the post-loop newline print once
+  (fleet thread 0) instead of once per GPU.
+
 ### Multi-GPU engine: one host thread per GPU over a split range (2026-11-06)
 
 Added

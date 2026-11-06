@@ -116,6 +116,14 @@ jobs:
         run: |
           make clean
           make RDC=0 GPU_ARCH=120 SM_ARCHS="120"
+      - name: Build K-1 SUBP_SEG=8 (subp segmentation — compile gate)
+        run: |
+          make clean
+          make NVCC_EXTRA="-DSUBP_SEG=8" GPU_ARCH=120 SM_ARCHS="120"
+      - name: Build K-1 SUBP_SEG=16 (compile gate)
+        run: |
+          make clean
+          make NVCC_EXTRA="-DSUBP_SEG=16" GPU_ARCH=120 SM_ARCHS="120"
       - name: Register/spill report (audit H2 evidence)
         run: make ptxas-info
       - name: Verify executable was produced

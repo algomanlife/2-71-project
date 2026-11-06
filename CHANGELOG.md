@@ -6,6 +6,23 @@ releases exist.
 
 ## [Unreleased]
 
+### K-1 verdict: REJECTED — register-window segmentation loses 23-27% (2026-11-06)
+
+Measured on the fresh rig (default-build baseline 9,453.4 Mkeys/s,
+records sweep-20261106T091743Z / T090153Z / T093824Z / T094028Z):
+- `SUBP_SEG=16`: median 6,911.8 (**-27%**) — q[16][4] = 128 registers, spills.
+- `SUBP_SEG=8`: median 7,254.4 then 7,319.6 (**-23%, reproduced**) — the
+  64-register window still spills, plus re-materialization muls add EC work.
+- **Coverage flawless on both: proof.py 848/848 PASS** — the correctness
+  gate did its job; the loss is purely performance.
+- Release untouched: `SUBP_SEG` defaults to 0 (legacy, binary-identical);
+  the code stays as recorded negative evidence.
+- Program consequence: local-memory indexing is not the wall — the
+  validated lever stays per-key instruction count (K-2a +7.4%, K-2b2
+  +1.0% accepted). Next: **K-3** (point-add restructure: shares
+  subexpressions between the +/- pair, REDUCES modmuls, no extra
+  registers).
+
 ### K-1: subp[] segmentation — compile-gated experiment (2026-11-05)
 
 Added

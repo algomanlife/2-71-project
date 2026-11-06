@@ -318,6 +318,9 @@ inversions for multiplications.
   <img src="docs/assets/lab-calibration.svg" alt="Lab calibration: modmul ceiling vs engine usage" width="880"/>
 </p>
 
+**Multi-GPU (2× RTX 5090):** [setup & test runbook](docs/MULTI_GPU_SETUP.md) —
+one range, all GPUs, aggregated ~2x throughput.
+
 **User & reference documentation:**
 [Usage (CLI reference)](docs/USAGE.md) ·
 [Search workflow](docs/SEARCH_WORKFLOW.md) ·
